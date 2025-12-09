@@ -56,7 +56,6 @@
 </head>
 <body>
     <div class="container">
-        <!-- Навигация -->
         <nav class="navbar navbar-expand-lg navbar-dark navbar-custom rounded">
             <div class="container-fluid">
                 <a class="navbar-brand" href="{% url 'home' %}">Детский сад</a>
@@ -82,6 +81,9 @@
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'parent_list' %}">Родители</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'reports' %}" target="_blank">Отчеты</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="/admin/" target="_blank">Админка</a>
