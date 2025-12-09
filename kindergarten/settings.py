@@ -93,25 +93,13 @@ DATABASES = {
 }
 
 # Добавьте в конец settings.py
+LOGIN_URL = '/accounts/login/'
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/'
 
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
-
-# Добавьте в конец settings.py
-LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = 'home'
-LOGOUT_REDIRECT_URL = 'home'
-
-# Настройки сессии
-SESSION_COOKIE_AGE = 1209600  # 2 недели
-SESSION_SAVE_EVERY_REQUEST = True
-
-# Настройки безопасности
-if DEBUG:
-    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-else:
-    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
 # Настройки для регистрации пользователей
 if DEBUG:

@@ -115,3 +115,49 @@ class EventForm(forms.ModelForm):
             'event_type': forms.Select(attrs={'class': 'form-control'}),
             'groups': forms.SelectMultiple(attrs={'class': 'form-control'}),
         }
+
+class AddChildToParentForm(forms.Form):
+    parent = forms.ModelChoiceField(
+        queryset=Parent.objects.all(),
+        label='Родитель',
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    student = forms.ModelChoiceField(
+        queryset=Student.objects.all(),
+        label='Ребенок',
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    relationship_type = forms.ChoiceField(
+        choices=Parent.RELATIONSHIP_CHOICES,
+        label='Степень родства',
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    is_primary = forms.BooleanField(
+        label='Основной контакт',
+        required=False,
+        initial=True,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+    )
+
+class AddParentToChildForm(forms.Form):
+    student = forms.ModelChoiceField(
+        queryset=Student.objects.all(),
+        label='Ребенок',
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    parent = forms.ModelChoiceField(
+        queryset=Parent.objects.all(),
+        label='Родитель',
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    relationship_type = forms.ChoiceField(
+        choices=Parent.RELATIONSHIP_CHOICES,
+        label='Степень родства',
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    is_primary = forms.BooleanField(
+        label='Основной контакт',
+        required=False,
+        initial=True,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+    )

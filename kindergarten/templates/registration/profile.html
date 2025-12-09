@@ -1,0 +1,375 @@
+{% extends 'kindergarten/base.html' %}
+
+{% block title %}Мой профиль{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <!-- Карточка профиля -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-person-circle"></i> Профиль пользователя</h5>
+            </div>
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    {% if role == 'Воспитатель' %}
+                    <i class="bi bi-person-badge display-1 text-success"></i>
+                    {% elif role == 'Заведующий' %}
+                    <i class="bi bi-gear display-1 text-warning"></i>
+                    {% elif role == 'Родитель' %}
+                    <i class="bi bi-people display-1 text-primary"></i>
+                    {% else %}
+                    <i class="bi bi-person display-1 text-secondary"></i>
+                    {% endif %}
+                </div>
+                
+                <h4>{{ user.username }}</h4>
+                <span class="badge 
+                    {% if role == 'Воспитатель' %}bg-success
+                    {% elif role == 'Заведующий' %}bg-warning
+                    {% elif role == 'Родитель' %}bg-primary
+                    {% else %}bg-secondary{% endif %} fs-6">
+                    {{ role }}
+                </span>
+                
+                <div class="mt-4">
+                    <table class="table table-sm">
+                        <tr>
+                            <th><i class="bi bi-person"></i> Имя пользователя:</th>
+                            <td>{{ user.username }}</td>
+                        </tr>
+                        <tr>
+                            <th><i class="bi bi-envelope"></i> Email:</th>
+                            <td>{{ user.email|default:"Не указан" }}</td>
+                        </tr>
+                        <tr>
+                            <th><i class="bi bi-calendar"></i> Дата регистрации:</th>
+                            <td>{{ user.date_joined|date:"d.m.Y" }}</td>
+                        </tr>
+                        <tr>
+                            <th><i class="bi bi-clock"></i> Последний вход:</th>
+                            <td>{{ user.last_login|date:"d.m.Y H:i"|default:"Никогда" }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer">
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger w-100">
+                        <i class="bi bi-box-arrow-right"></i> Выйти из системы
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Быстрые действия -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-lightning"></i> Быстрые действия</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    {% if user.is_superuser %}
+                    <a href="/admin/" class="list-group-item list-group-item-action" target="_blank">
+                        <i class="bi bi-gear"></i> Админ-панель Django
+                    </a>
+                    {% endif %}
+                    
+                    <a href="{% url 'home' %}" class="list-group-item list-group-item-action">
+                        <i class="bi bi-house"></i> На главную
+                    </a>
+                    
+                    {% if role == 'Родитель' and profile %}
+                    <a href="{% url 'parent_detail' profile.pk %}" class="list-group-item list-group-item-action">
+                        <i class="bi bi-person"></i> Мой профиль родителя
+                    </a>
+                    {% endif %}
+                    
+                    {% if role == 'Воспитатель' and profile %}
+                    <a href="{% url 'teacher_detail' profile.pk %}" class="list-group-item list-group-item-action">
+                        <i class="bi bi-person-badge"></i> Мой профиль воспитателя
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <!-- Детальная информация в зависимости от роли -->
+        {% if role == 'Родитель' and profile %}
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-person"></i> Информация о родителе</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <th width="40%">ФИО:</th>
+                                <td>{{ profile.parent_fio }}</td>
+                            </tr>
+                            <tr>
+                                <th>Телефон:</th>
+                                <td>{{ profile.parent_number }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6><i class="bi bi-people"></i> Мои дети</h6>
+                                {% with children=profile.studentparent_set.all %}
+                                {% if children %}
+                                <ul class="list-group list-group-flush">
+                                    {% for relation in children %}
+                                    <li class="list-group-item">
+                                        <a href="{% url 'student_detail' relation.student.pk %}">
+                                            {{ relation.student.student_fio }}
+                                        </a>
+                                        <small class="text-muted">({{ relation.relationship_type }})</small>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                                {% else %}
+                                <p class="text-muted mb-0">Дети не привязаны</p>
+                                {% endif %}
+                                {% endwith %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-3">
+                    <a href="{% url 'parent_edit' profile.pk %}" class="btn btn-warning">
+                        <i class="bi bi-pencil"></i> Редактировать профиль
+                    </a>
+                    <a href="{% url 'add_child_to_parent' profile.pk %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> Добавить ребенка
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if role == 'Воспитатель' and profile %}
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-person-badge"></i> Информация о воспитателе</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <th width="40%">ФИО:</th>
+                                <td>{{ profile.teacher_fio }}</td>
+                            </tr>
+                            <tr>
+                                <th>Должность:</th>
+                                <td>{{ profile.teacher_position }}</td>
+                            </tr>
+                            <tr>
+                                <th>Телефон:</th>
+                                <td>{{ profile.teacher_number }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6><i class="bi bi-people"></i> Мои группы</h6>
+                                {% with groups=profile.group_set.all %}
+                                {% if groups %}
+                                <ul class="list-group list-group-flush">
+                                    {% for group in groups %}
+                                    <li class="list-group-item">
+                                        <a href="{% url 'group_detail' group.pk %}">
+                                            {{ group.group_name }}
+                                        </a>
+                                        <small class="text-muted">({{ group.group_category }})</small>
+                                        <span class="badge bg-info float-end">
+                                            {{ group.current_students_count }}/{{ group.max_capacity }}
+                                        </span>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                                {% else %}
+                                <p class="text-muted mb-0">Группы не назначены</p>
+                                {% endif %}
+                                {% endwith %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-3">
+                    <a href="{% url 'teacher_edit' profile.pk %}" class="btn btn-warning">
+                        <i class="bi bi-pencil"></i> Редактировать профиль
+                    </a>
+                    {% with groups=profile.group_set.all %}
+                    {% if groups %}
+                    <a href="{% url 'attendance_list' %}" class="btn btn-primary">
+                        <i class="bi bi-calendar-check"></i> Отметить посещаемость
+                    </a>
+                    {% endif %}
+                    {% endwith %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if role == 'Заведующий' or user.is_superuser %}
+        <div class="card mb-4">
+            <div class="card-header bg-warning text-white">
+                <h5 class="mb-0"><i class="bi bi-gear"></i> Административные функции</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 text-center mb-3">
+                        <a href="/admin/" class="btn btn-outline-warning w-100 h-100 d-flex flex-column justify-content-center" target="_blank">
+                            <i class="bi bi-gear display-4 mb-2"></i>
+                            <h5>Админ-панель</h5>
+                            <p class="small">Полное управление системой</p>
+                        </a>
+                    </div>
+                    <div class="col-md-4 text-center mb-3">
+                        <a href="{% url 'reports' %}" class="btn btn-outline-info w-100 h-100 d-flex flex-column justify-content-center">
+                            <i class="bi bi-graph-up display-4 mb-2"></i>
+                            <h5>Отчеты</h5>
+                            <p class="small">Статистика и аналитика</p>
+                        </a>
+                    </div>
+                    <div class="col-md-4 text-center mb-3">
+                        <a href="{% url 'student_list' %}" class="btn btn-outline-success w-100 h-100 d-flex flex-column justify-content-center">
+                            <i class="bi bi-people display-4 mb-2"></i>
+                            <h5>Ученики</h5>
+                            <p class="small">Управление контингентом</p>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Статистика и информация -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Системная информация</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 text-center">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h1 class="display-6">{{ total_students|default:"0" }}</h1>
+                                <p class="small mb-0">Учеников</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h1 class="display-6">{{ total_teachers|default:"0" }}</h1>
+                                <p class="small mb-0">Воспитателей</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h1 class="display-6">{{ total_groups|default:"0" }}</h1>
+                                <p class="small mb-0">Групп</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h1 class="display-6">{{ attendance_today|default:"0" }}</h1>
+                                <p class="small mb-0">Присутствуют сегодня</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <h6><i class="bi bi-info-circle"></i> О системе</h6>
+                    <p class="mb-0">
+                        Система управления детским садом. Версия 1.0.<br>
+                        <small class="text-muted">Для получения помощи обратитесь к администратору.</small>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Добавляем классы Bootstrap к элементам
+document.addEventListener('DOMContentLoaded', function() {
+    // Обновляем время последнего входа каждую минуту
+    function updateLastLogin() {
+        const now = new Date();
+        const timeElement = document.querySelector('td:contains("Последний вход")');
+        if (timeElement) {
+            timeElement.textContent = now.toLocaleString('ru-RU');
+        }
+    }
+    
+    // Обновляем каждую минуту
+    setInterval(updateLastLogin, 60000);
+    
+    // Анимация статистики
+    const statElements = document.querySelectorAll('.display-6');
+    statElements.forEach(element => {
+        const finalValue = parseInt(element.textContent);
+        let currentValue = 0;
+        const increment = finalValue / 50;
+        
+        const timer = setInterval(() => {
+            currentValue += increment;
+            if (currentValue >= finalValue) {
+                element.textContent = finalValue;
+                clearInterval(timer);
+            } else {
+                element.textContent = Math.floor(currentValue);
+            }
+        }, 20);
+    });
+});
+</script>
+
+<style>
+.card {
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.list-group-item:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.display-6 {
+    color: var(--bs-primary);
+    font-weight: bold;
+}
+
+.badge.fs-6 {
+    padding: 0.35em 0.65em;
+}
+
+.table-borderless th {
+    color: #6c757d;
+    font-weight: 600;
+}
+</style>
+{% endblock %}

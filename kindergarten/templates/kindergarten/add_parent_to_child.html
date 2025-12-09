@@ -1,0 +1,114 @@
+{% extends 'kindergarten/base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">{{ title }}</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Родитель:</label>
+                        <input type="text" class="form-control" value="{{ parent.parent_fio }}" readonly>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.student.id_for_label }}" class="form-label">
+                            Выберите ребенка *
+                        </label>
+                        {{ form.student }}
+                        {% if form.student.errors %}
+                        <div class="text-danger small">{{ form.student.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.relationship_type.id_for_label }}" class="form-label">
+                                    Степень родства *
+                                </label>
+                                {{ form.relationship_type }}
+                                {% if form.relationship_type.errors %}
+                                <div class="text-danger small">{{ form.relationship_type.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="form-check mt-4">
+                                    {{ form.is_primary }}
+                                    <label class="form-check-label" for="{{ form.is_primary.id_for_label }}">
+                                        Основной контакт
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-link"></i> Связать
+                        </button>
+                        <a href="{% url 'parent_detail' parent.pk %}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Отмена
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Информация о родителе</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tr>
+                        <th>ФИО:</th>
+                        <td>{{ parent.parent_fio }}</td>
+                    </tr>
+                    <tr>
+                        <th>Телефон:</th>
+                        <td>{{ parent.parent_number }}</td>
+                    </tr>
+                    <tr>
+                        <th>Детей:</th>
+                        <td>{{ parent.studentparent_set.count }}</td>
+                    </tr>
+                </table>
+                
+                <h6 class="mt-3">Уже связанные дети:</h6>
+                <ul class="list-group list-group-flush">
+                    {% for relation in parent.studentparent_set.all %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>
+                            {{ relation.student.student_fio }}
+                            <small class="text-muted">({{ relation.relationship_type }})</small>
+                        </span>
+                        <form method="post" action="{% url 'remove_parent_child_relation' relation.pk %}" 
+                              class="d-inline" onsubmit="return confirm('Удалить связь?');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-danger">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </li>
+                    {% empty %}
+                    <li class="list-group-item text-muted">Нет связанных детей</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

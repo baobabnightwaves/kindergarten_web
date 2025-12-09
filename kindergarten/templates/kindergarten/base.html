@@ -88,6 +88,34 @@
                         <li class="nav-item">
                             <a class="nav-link" href="/admin/" target="_blank">Админка</a>
                         </li>
+                        <!-- В навигации добавьте: -->
+                        {% if user.is_authenticated %}
+                        <div class="dropdown">
+                            <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-person-circle"></i> {{ user.username }}
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{% url 'profile' %}">
+                                    <i class="bi bi-person"></i> Профиль
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                
+                                {% if user.is_superuser or user.groups.filter.name == 'Заведующие' %}
+                                <li><a class="dropdown-item" href="/admin/" target="_blank">
+                                    <i class="bi bi-gear"></i> Админка
+                                </a></li>
+                                {% endif %}
+                                
+                                <li><a class="dropdown-item" href="{% url 'logout' %}">
+                                    <i class="bi bi-box-arrow-right"></i> Выйти
+                                </a></li>
+                            </ul>
+                        </div>
+                        {% else %}
+                        <a href="{% url 'login' %}" class="btn btn-outline-light">
+                            <i class="bi bi-box-arrow-in-right"></i> Войти
+                        </a>
+                        {% endif %}
                     </ul>
                     
                     <form class="d-flex" action="{% url 'search' %}" method="get">
