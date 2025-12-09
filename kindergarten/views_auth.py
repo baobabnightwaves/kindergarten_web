@@ -6,19 +6,15 @@ from .models import Teacher, Parent
 from django.contrib.auth.models import User, Group
 
 def register(request):
-    """Регистрация нового пользователя"""
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
         if form.is_valid():
-            user = form.save()
-            
-            # Определяем роль пользователя
+            user = form.save()            
             role = request.POST.get('role')
             if role == 'teacher':
                 group, created = Group.objects.get_or_create(name='Воспитатели')
                 user.groups.add(group)
                 
-                # Создаем профиль воспитателя
                 Teacher.objects.create(
                     user=user,
                     teacher_fio=request.POST.get('full_name', ''),
@@ -31,7 +27,6 @@ def register(request):
                 group, created = Group.objects.get_or_create(name='Родители')
                 user.groups.add(group)
                 
-                # Создаем профиль родителя
                 Parent.objects.create(
                     user=user,
                     parent_fio=request.POST.get('full_name', ''),
@@ -46,7 +41,6 @@ def register(request):
                 user.save()
                 messages.success(request, 'Вы зарегистрированы как заведующий!')
             
-            # Автоматический вход
             username = form.cleaned_data.get('username')
             password = form.cleaned_data.get('password1')
             user = authenticate(username=username, password=password)
@@ -59,10 +53,7 @@ def register(request):
     return render(request, 'registration/register.html', {'form': form})
 
 def profile(request):
-    """Профиль пользователя"""
-    user = request.user
-    
-    # Получаем профиль в зависимости от роли
+    user = request.user    
     profile_data = None
     if hasattr(user, 'teacher_profile'):
         profile_data = user.teacher_profile
@@ -80,3 +71,4 @@ def profile(request):
         'profile': profile_data,
         'role': role,
     })
+

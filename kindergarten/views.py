@@ -288,12 +288,9 @@ def parent_delete(request, pk):
     
     return render(request, 'kindergarten/parent_confirm_delete.html', {'parent': parent})
 
-# ========== ПОСЕЩАЕМОСТЬ ==========
 def attendance_list(request):
-    """Журнал посещаемости"""
     today = date.today()
     
-    # Фильтрация по дате
     date_filter = request.GET.get('date', today.strftime('%Y-%m-%d'))
     
     try:
@@ -310,7 +307,6 @@ def attendance_list(request):
     })
 
 def attendance_create(request):
-    """Создание записи о посещаемости"""
     if request.method == 'POST':
         form = AttendanceForm(request.POST)
         if form.is_valid():
@@ -323,7 +319,6 @@ def attendance_create(request):
     return render(request, 'kindergarten/attendance_form.html', {'form': form, 'title': 'Добавление посещаемости'})
 
 def attendance_edit(request, pk):
-    """Редактирование посещаемости"""
     attendance = get_object_or_404(Attendance, pk=pk)
     if request.method == 'POST':
         form = AttendanceForm(request.POST, instance=attendance)
@@ -337,7 +332,6 @@ def attendance_edit(request, pk):
     return render(request, 'kindergarten/attendance_form.html', {'form': form, 'title': 'Редактирование посещаемости'})
 
 def attendance_delete(request, pk):
-    """Удаление посещаемости"""
     attendance = get_object_or_404(Attendance, pk=pk)
     if request.method == 'POST':
         attendance.delete()
@@ -346,17 +340,13 @@ def attendance_delete(request, pk):
     
     return render(request, 'kindergarten/attendance_confirm_delete.html', {'attendance': attendance})
 
-# ========== ОТЧЕТЫ ==========
 def reports(request):
-    """Страница отчетов"""
     return render(request, 'kindergarten/reports.html')
 
 def generate_report(request, report_type):
-    """Генерация отчетов"""
     from datetime import datetime
     
     if report_type == 'students_csv':
-        # Экспорт учеников в CSV
         response = HttpResponse(content_type='text/csv; charset=utf-8-sig')
         response['Content-Disposition'] = f'attachment; filename="students_{datetime.now().strftime("%Y%m%d")}.csv"'
         
@@ -380,12 +370,10 @@ def generate_report(request, report_type):
         return response
     
     elif report_type == 'attendance_month':
-        # Отчет по посещаемости за месяц
         today = date.today()
         month = int(request.GET.get('month', today.month))
         year = int(request.GET.get('year', today.year))
         
-        # Данные посещаемости
         attendance = Attendance.objects.filter(
             attendance_date__month=month,
             attendance_date__year=year
@@ -393,9 +381,7 @@ def generate_report(request, report_type):
         
         present_count = attendance.filter(status=True).count()
         absent_count = attendance.filter(status=False).count()
-        total = present_count + absent_count
-        
-        # Процент посещаемости
+        total = present_count + absent_count        
         attendance_rate = 0
         if total > 0:
             attendance_rate = round((present_count / total * 100), 2)
@@ -452,7 +438,6 @@ def api_stats(request):
         'absent_today': Attendance.objects.filter(attendance_date=today, status=False).count(),
     }
     
-    # Распределение по группам
     groups_stats = []
     for group in Group.objects.all():
         groups_stats.append({
