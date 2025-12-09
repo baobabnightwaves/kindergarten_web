@@ -1,0 +1,18 @@
+{% extends 'kindergarten/base.html' %}
+
+{% block title %}{% if form.instance.pk %}Редактирование{% else %}Добавление{% endif %} ученика{% endblock %}
+
+{% block content %}
+<h1>{% if form.instance.pk %}Редактирование{% else %}Добавление{% endif %} ученика</h1>
+
+<form method="post">
+    {% csrf_token %}
+    
+    <table>
+        {{ form.as_table }}
+    </table>
+    
+    <button type="submit" class="btn">Сохранить</button>
+    <a href="{% url 'student_list' %}" class="btn btn-danger">Отмена</a>
+</form>
+{% endblock %}

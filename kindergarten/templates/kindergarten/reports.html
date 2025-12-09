@@ -1,0 +1,124 @@
+{% extends 'kindergarten/base.html' %}
+
+{% block title %}Отчеты{% endblock %}
+
+{% block content %}
+<h1>Отчеты и аналитика</h1>
+
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Посещаемость за месяц</h5>
+                <p class="card-text">Статистика посещаемости за текущий месяц</p>
+                <a href="{% url 'generate_report' 'attendance_month' %}" class="btn btn-primary">Смотреть отчет</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Экспорт учеников</h5>
+                <p class="card-text">Экспорт списка учеников в CSV</p>
+                <a href="{% url 'generate_report' 'students_csv' %}" class="btn btn-success">
+                    <i class="fas fa-download"></i> Скачать CSV
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Статистика по группам</h5>
+                <p class="card-text">Распределение учеников по группам</p>
+                <a href="#" class="btn btn-info">Показать статистику</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5>Динамика посещаемости</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="attendanceChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5>Быстрая статистика</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-group">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Всего учеников
+                        <span class="badge bg-primary rounded-pill" id="total-students">0</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Всего воспитателей
+                        <span class="badge bg-success rounded-pill" id="total-teachers">0</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Всего групп
+                        <span class="badge bg-info rounded-pill" id="total-groups">0</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Записей посещаемости
+                        <span class="badge bg-warning rounded-pill" id="total-attendance">0</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+fetch('/api/stats/')
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('total-students').textContent = data.total_students;
+        document.getElementById('total-teachers').textContent = data.total_teachers;
+        document.getElementById('total-groups').textContent = data.total_groups;
+        document.getElementById('total-attendance').textContent = data.total_attendance;
+        
+        const ctx = document.getElementById('attendanceChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.attendance_labels,
+                datasets: [{
+                    label: 'Посещаемость',
+                    data: data.attendance_data,
+                    borderColor: 'rgb(75, 192, 192)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Посещаемость за последние 7 дней'
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

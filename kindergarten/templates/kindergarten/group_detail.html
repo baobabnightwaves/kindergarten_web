@@ -1,0 +1,42 @@
+{% extends 'kindergarten/base.html' %}
+
+{% block title %}Группа: {{ group.group_name }}{% endblock %}
+
+{% block content %}
+<h1>Группа: {{ group.group_name }}</h1>
+
+<div style="margin-bottom: 20px;">
+    <table class="info-table">
+        <tr><th>Категория:</th><td>{{ group.group_category }}</td></tr>
+        <tr><th>Год обучения:</th><td>{{ group.group_year }}</td></tr>
+        <tr><th>Воспитатель:</th><td>{{ group.teacher.teacher_fio }}</td></tr>
+        <tr><th>Телефон воспитателя:</th><td>{{ group.teacher.teacher_number }}</td></tr>
+    </table>
+</div>
+
+<h2>Ученики в группе ({{ students.count }})</h2>
+{% if students %}
+<table>
+    <tr>
+        <th>ID</th>
+        <th>ФИО</th>
+        <th>Дата рождения</th>
+        <th>Дата поступления</th>
+    </tr>
+    {% for student in students %}
+    <tr>
+        <td>{{ student.student_id }}</td>
+        <td><a href="{% url 'student_detail' student.pk %}">{{ student.student_fio }}</a></td>
+        <td>{{ student.student_birthday }}</td>
+        <td>{{ student.student_date_in }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% else %}
+<p>В группе пока нет учеников</p>
+{% endif %}
+
+<div style="margin-top: 20px;">
+    <a href="{% url 'group_list' %}" class="btn">Назад к списку групп</a>
+</div>
+{% endblock %}

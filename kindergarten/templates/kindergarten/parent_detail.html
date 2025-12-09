@@ -1,0 +1,68 @@
+{% extends 'kindergarten/base.html' %}
+
+{% block title %}Родитель: {{ parent.parent_fio }}{% endblock %}
+
+{% block content %}
+<h1>Родитель: {{ parent.parent_fio }}</h1>
+
+<div class="action-buttons mb-4">
+    <a href="{% url 'parent_edit' parent.pk %}" class="btn btn-warning">
+        <i class="bi bi-pencil"></i> Редактировать
+    </a>
+    <a href="{% url 'parent_delete' parent.pk %}" class="btn btn-danger">
+        <i class="bi bi-trash"></i> Удалить
+    </a>
+    <a href="{% url 'parent_list' %}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Назад к списку
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Основная информация</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <th>ФИО:</th>
+                        <td>{{ parent.parent_fio }}</td>
+                    </tr>
+                    <tr>
+                        <th>Телефон:</th>
+                        <td>{{ parent.parent_number }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Дети родителя</h5>
+            </div>
+            <div class="card-body">
+                {% if children %}
+                <div class="list-group">
+                    {% for child in children %}
+                    <a href="{% url 'student_detail' child.student.pk %}" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ child.student.student_fio }}</h6>
+                            <small class="text-muted">{{ child.relationship_type }}</small>
+                        </div>
+                        <small class="text-muted">
+                            Группа: {{ child.student.group.group_name }}
+                        </small>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted">Нет привязанных детей</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

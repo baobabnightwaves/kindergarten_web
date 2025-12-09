@@ -1,0 +1,28 @@
+{% extends 'kindergarten/base.html' %}
+
+{% block title %}Главная страница{% endblock %}
+
+{% block content %}
+<h1>Добро пожаловать в систему детского сада!</h1>
+<p>Система управления детским садом с возможностью:</p>
+<ul>
+    <li>Управления учениками</li>
+    <li>Управления воспитателями</li>
+    <li>Управления группами</li>
+    <li>Учета посещаемости</li>
+    <li>Ведения информации о родителях</li>
+</ul>
+
+<h2>Статистика:</h2>
+<div style="display: flex; gap: 20px;">
+    <div style="background: #e3f2fd; padding: 20px; border-radius: 5px;">
+        <h3>Ученики: {{ students_count }}</h3>
+    </div>
+    <div style="background: #f3e5f5; padding: 20px; border-radius: 5px;">
+        <h3>Воспитатели: {{ teachers_count }}</h3>
+    </div>
+    <div style="background: #e8f5e8; padding: 20px; border-radius: 5px;">
+        <h3>Группы: {{ groups_count }}</h3>
+    </div>
+</div>
+{% endblock %}

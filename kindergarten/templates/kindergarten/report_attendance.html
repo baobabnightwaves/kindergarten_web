@@ -1,0 +1,222 @@
+{% extends 'kindergarten/base.html' %}
+
+{% block title %}Отчет по посещаемости{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>📊 Отчет по посещаемости за {{ month }}</h1>
+    <div>
+        <a href="{% url 'reports' %}" class="btn btn-secondary">
+            ← Назад к отчетам
+        </a>
+    </div>
+</div>
+
+<!-- Выбор месяца -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label for="month" class="form-label">Месяц:</label>
+                <select class="form-select" id="month" name="month">
+                    {% for i in "123456789101112" %}
+                    <option value="{{ forloop.counter }}" {% if forloop.counter == month_number %}selected{% endif %}>
+                        {{ forloop.counter }} - {{ "Январь,Февраль,Март,Апрель,Май,Июнь,Июль,Август,Сентябрь,Октябрь,Ноябрь,Декабрь"|split:","|slice:forloop.counter0|first }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="year" class="form-label">Год:</label>
+                <input type="number" class="form-control" id="year" name="year" 
+                       value="{{ year }}" min="2020" max="2030">
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary">Показать</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-3">
+        <div class="card text-white bg-success mb-3">
+            <div class="card-body text-center">
+                <h1 class="display-4">{{ present_count }}</h1>
+                <h5>Присутствовали</h5>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card text-white bg-danger mb-3">
+            <div class="card-body text-center">
+                <h1 class="display-4">{{ absent_count }}</h1>
+                <h5>Отсутствовали</h5>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card text-white bg-primary mb-3">
+            <div class="card-body text-center">
+                <h1 class="display-4">{{ total }}</h1>
+                <h5>Всего записей</h5>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card text-white bg-info mb-3">
+            <div class="card-body text-center">
+                <h1 class="display-4">{{ attendance_rate }}%</h1>
+                <h5>Процент посещаемости</h5>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Предупреждение если данных нет -->
+{% if total == 0 %}
+<div class="alert alert-warning mt-4">
+    <h4>⚠️ Нет данных за выбранный период</h4>
+    <p>За {{ month }} нет записей о посещаемости.</p>
+</div>
+{% else %}
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">📈 Диаграмма посещаемости</h5>
+    </div>
+    <div class="card-body">
+        <canvas id="attendancePieChart" width="400" height="200"></canvas>
+    </div>
+</div>
+
+<!-- Детализация по дням -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">📅 Детализация по дням</h5>
+    </div>
+    <div class="card-body">
+        <div style="height: 300px;">
+            <canvas id="dailyChart"></canvas>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="mt-4">
+    {% if total > 0 %}
+    <button onclick="window.print()" class="btn btn-primary me-2">
+        <i class="bi bi-printer"></i> Распечатать отчет
+    </button>
+    <button onclick="exportToPDF()" class="btn btn-danger me-2">
+        <i class="bi bi-file-pdf"></i> Экспорт в PDF
+    </button>
+    {% endif %}
+    <a href="{% url 'generate_report' 'students_csv' %}" class="btn btn-success">
+        <i class="bi bi-file-earmark-excel"></i> Экспорт учеников (CSV)
+    </a>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Bootstrap Icons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+<script>
+function splitString(str, delimiter) {
+    return str.split(delimiter);
+}
+
+const presentCount = { present_count };
+const absentCount = { absent_count };
+const totalCount = { total };
+if (totalCount > 0) {
+    const pieCtx = document.getElementById('attendancePieChart').getContext('2d');
+    new Chart(pieCtx, {
+        type: 'pie',
+        data: {
+            labels: ['Присутствовали', 'Отсутствовали'],
+            datasets: [{
+                data: [presentCount, absentCount],
+                backgroundColor: [
+                    'rgba(75, 192, 192, 0.8)',
+                    'rgba(255, 99, 132, 0.8)'
+                ],
+                borderColor: [
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(255, 99, 132, 1)'
+                ],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            const value = context.raw;
+                            const percentage = Math.round((value / totalCount) * 100);
+                            return label + value + ' (' + percentage + '%)';
+                        }
+                    }
+                }
+            }
+        }
+    });
+    
+    const dailyCtx = document.getElementById('dailyChart').getContext('2d');
+}
+
+function exportToPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    doc.setFontSize(20);
+    doc.text('Отчет по посещаемости', 20, 20);
+    doc.setFontSize(12);
+    doc.text('Период: {{ month }}', 20, 30);
+    doc.text(`Присутствовали: {{ present_count }}`, 20, 40);
+    doc.text(`Отсутствовали: {{ absent_count }}`, 20, 50);
+    doc.text(`Всего записей: {{ total }}`, 20, 60);
+    doc.text(`Процент посещаемости: {{ attendance_rate }}%`, 20, 70);
+    
+    doc.save('attendance_report_{{ month_number }}_{{ year }}.pdf');
+}
+
+if (typeof window.jspdf === 'undefined') {
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    script.onload = function() {
+        console.log('jsPDF loaded');
+    };
+    document.head.appendChild(script);
+}
+</script>
+
+<style>
+@media print {
+    .navbar, .btn, form, .alert {
+        display: none !important;
+    }
+    .card {
+        border: 1px solid #000 !important;
+        break-inside: avoid;
+    }
+    h1 {
+        font-size: 24px !important;
+    }
+}
+</style>
+{% endblock %}
