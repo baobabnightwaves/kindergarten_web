@@ -1,0 +1,49 @@
+{% extends 'kindergarten/base.html' %}
+
+{% block title %}Удаление ребенка{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header bg-danger text-white">
+        <h4 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Подтверждение удаления</h4>
+    </div>
+    <div class="card-body">
+        <h5>Вы уверены, что хотите удалить ребенка из базы данных?</h5>
+        
+        <div class="alert alert-warning mt-3">
+            <h6><i class="bi bi-info-circle"></i> Информация о ребенке:</h6>
+            <ul>
+                <li><strong>ФИО:</strong> {{ student.student_fio }}</li>
+                <li><strong>Дата рождения:</strong> {{ student.student_birthday }}</li>
+                <li><strong>Группа:</strong> {{ student.group.group_name }}</li>
+                <li><strong>Дата поступления:</strong> {{ student.student_date_in }}</li>
+                <li><strong>Возраст:</strong> {{ student.age }} лет</li>
+            </ul>
+        </div>
+        
+        <form method="post">
+            {% csrf_token %}
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-danger">
+                    <i class="bi bi-trash"></i> Да, удалить
+                </button>
+                <a href="{% url 'student_detail' student.pk %}" class="btn btn-secondary">
+                    <i class="bi bi-x-circle"></i> Отмена
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header bg-warning text-dark">
+        <h6 class="mb-0"><i class="bi bi-shield-exclamation"></i> Важная информация</h6>
+    </div>
+    <div class="card-body">
+        <p class="mb-0">
+            <strong>Безвозвратное удаление!</strong> Все данные о ребенке будут безвозвратно удалены 
+            из базы данных.
+        </p>
+    </div>
+</div>
+{% endblock %}
