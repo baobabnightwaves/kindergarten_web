@@ -31,7 +31,6 @@ class StudentForm(forms.ModelForm):
             if age_at_entry < 2 or age_at_entry > 7:
                 raise ValidationError('Прием детей в детский сад осуществляется только в возрасте от 2 до 7 лет')
         
-        # Проверка заполненности группы
         if group and group.is_full() and not self.instance.pk:
             raise ValidationError(f'Группа "{group.group_name}" уже заполнена (максимум {group.max_capacity} учеников)')
         
@@ -64,7 +63,6 @@ class GroupForm(forms.ModelForm):
         cleaned_data = super().clean()
         max_capacity = cleaned_data.get('max_capacity')
         
-        # Проверка максимальной наполняемости
         if max_capacity and max_capacity > 30:
             raise ValidationError('Группа не может содержать более 30 учеников')
         

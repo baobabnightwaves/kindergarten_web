@@ -7,7 +7,6 @@ from django.contrib.auth.models import User, Group
 from .models import Teacher, Parent
 
 def login_view(request):
-    """Вход в систему"""
     if request.user.is_authenticated:
         return redirect('home')
     
@@ -22,7 +21,6 @@ def login_view(request):
                 login(request, user)
                 messages.success(request, f'Добро пожаловать, {username}!')
                 
-                # Редирект на нужную страницу
                 next_url = request.GET.get('next', 'home')
                 return redirect(next_url)
             else:
@@ -33,13 +31,11 @@ def login_view(request):
     return render(request, 'registration/login.html', {'form': form})
 
 def logout_view(request):
-    """Выход из системы"""
     logout(request)
     messages.success(request, 'Вы успешно вышли из системы')
     return redirect('home')
 
 def register_view(request):
-    """Регистрация нового пользователя"""
     if request.user.is_authenticated:
         return redirect('home')
     
@@ -47,16 +43,12 @@ def register_view(request):
         user_form = UserCreationForm(request.POST)
         
         if user_form.is_valid():
-            user = user_form.save()
-            
-            # Определяем роль из формы
+            user = user_form.save()            
             role = request.POST.get('role', 'parent')
             
             if role == 'teacher':
                 group, _ = Group.objects.get_or_create(name='Воспитатели')
-                user.groups.add(group)
-                
-                # Создаем профиль воспитателя
+                user.groups.add(group)                
                 Teacher.objects.create(
                     user=user,
                     teacher_fio=request.POST.get('full_name', ''),
@@ -72,11 +64,10 @@ def register_view(request):
                 user.save()
                 messages.success(request, 'Вы зарегистрированы как заведующий!')
                 
-            else:  # parent
+            else:
                 group, _ = Group.objects.get_or_create(name='Родители')
                 user.groups.add(group)
                 
-                # Создаем профиль родителя
                 Parent.objects.create(
                     user=user,
                     parent_fio=request.POST.get('full_name', ''),
@@ -84,7 +75,6 @@ def register_view(request):
                 )
                 messages.success(request, 'Вы зарегистрированы как родитель!')
             
-            # Автоматический вход
             login(request, user)
             return redirect('home')
     else:
@@ -94,7 +84,6 @@ def register_view(request):
 
 @login_required
 def profile_view(request):
-    """Профиль пользователя"""
     user = request.user
     profile = None
     role = 'Пользователь'
@@ -116,7 +105,6 @@ def profile_view(request):
         'role': role
     })
 
-# Декораторы для проверки ролей
 def is_teacher(user):
     return user.groups.filter(name='Воспитатели').exists() or user.is_superuser
 
@@ -129,10 +117,8 @@ def is_parent(user):
 def is_admin(user):
     return user.is_superuser or user.is_staff
 
-# Пример защищенной view
 @login_required
 @user_passes_test(is_director, login_url='login')
 def admin_dashboard(request):
-    """Панель управления для заведующих"""
     return render(request, 'dashboard/admin_dashboard.html')
 

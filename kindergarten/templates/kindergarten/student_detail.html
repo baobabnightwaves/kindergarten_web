@@ -6,9 +6,13 @@
 <h1>{{ student.student_fio }}</h1>
 
 <div style="display: flex; gap: 20px; margin-bottom: 30px;">
+    {% if user.groups.all.0.name == 'Заведующие' or user.is_superuser %}
     <a href="{% url 'student_edit' student.pk %}" class="btn btn-warning">Редактировать</a>
     <a href="{% url 'student_delete' student.pk %}" class="btn btn-danger">Удалить</a>
     <a href="{% url 'student_list' %}" class="btn btn-secondary">Назад к списку</a>
+    {% elif user.groups.all.0.name == 'Родители' %}
+        <a href="{% url 'home' %}" class="btn btn-secondary">Назад</a>
+    {% endif %}
 </div>
 
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">

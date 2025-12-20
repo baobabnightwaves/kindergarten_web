@@ -70,10 +70,12 @@
                     <a href="{% url 'group_detail' group.pk %}" class="btn btn-sm btn-info">
                         <i class="bi bi-eye"></i> Подробнее
                     </a>
+                    {% if user.groups.all.0.name == 'Заведующие' or user.is_superuser %}
                     <div>
                         <a href="{% url 'group_edit' group.pk %}" class="btn btn-sm btn-warning">Редактировать</a>
                         <a href="{% url 'group_delete' group.pk %}" class="btn btn-sm btn-danger">Удалить</a>
                     </div>
+                    {% endif %}
                 </div>
             </div>
         </div>

@@ -1,13 +1,13 @@
 {% extends 'kindergarten/base.html' %}
 
-{% block title %}Регистрация{% endblock %}
+{% block title %}Создание нового пользователя{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-8">
         <div class="card">
             <div class="card-header">
-                <h4 class="mb-0"><i class="bi bi-person-plus"></i> Регистрация в системе</h4>
+                <h4 class="mb-0"><i class="bi bi-person-plus"></i> Создание нового пользователя</h4>
             </div>
             <div class="card-body">
                 <form method="post">
@@ -38,7 +38,6 @@
                                     Имя пользователя *
                                 </label>
                                 {{ form.username }}
-                                <div class="form-text">Только буквы, цифры и @/./+/-/_</div>
                                 {% if form.username.errors %}
                                 <div class="text-danger small">{{ form.username.errors }}</div>
                                 {% endif %}
@@ -102,7 +101,7 @@
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label for="email" class="form-label">
-                                    Email (необязательно)
+                                    Email
                                 </label>
                                 <input type="email" class="form-control" id="email" name="email" 
                                        placeholder="ivanov@example.com">
@@ -113,7 +112,7 @@
                     <h5 class="mb-3 mt-4">2. Выберите роль</h5>
                     
                     <div class="row">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <div class="card h-100 role-card" data-role="parent">
                                 <div class="card-body text-center">
                                     <div class="mb-3">
@@ -121,11 +120,11 @@
                                     </div>
                                     <h5>Родитель</h5>
                                     <p class="small text-muted">
-                                        Просмотр информации о своем ребенке, контакты воспитателей
+                                        Просмотр информации о своем ребенке
                                     </p>
                                     <div class="form-check">
                                         <input class="form-check-input" type="radio" name="role" 
-                                               id="role_parent" value="parent" checked>
+                                               id="role_parent" value="parent">
                                         <label class="form-check-label" for="role_parent">
                                             Выбрать
                                         </label>
@@ -134,7 +133,7 @@
                             </div>
                         </div>
                         
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <div class="card h-100 role-card" data-role="teacher">
                                 <div class="card-body text-center">
                                     <div class="mb-3">
@@ -155,7 +154,7 @@
                             </div>
                         </div>
                         
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <div class="card h-100 role-card" data-role="director">
                                 <div class="card-body text-center">
                                     <div class="mb-3">
@@ -163,7 +162,7 @@
                                     </div>
                                     <h5>Заведующий</h5>
                                     <p class="small text-muted">
-                                        Полный доступ ко всем данным, управление системой
+                                        Полный доступ ко всем данным (администратор сада)
                                     </p>
                                     <div class="form-check">
                                         <input class="form-check-input" type="radio" name="role" 
@@ -175,100 +174,40 @@
                                 </div>
                             </div>
                         </div>
+                        
+                        <div class="col-md-3">
+                            <div class="card h-100 role-card" data-role="superuser">
+                                <div class="card-body text-center">
+                                    <div class="mb-3">
+                                        <i class="bi bi-shield-check display-4 text-danger"></i>
+                                    </div>
+                                    <h5>Суперпользователь</h5>
+                                    <p class="small text-muted">
+                                        Полный доступ + управление пользователями
+                                    </p>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="role" 
+                                               id="role_superuser" value="superuser">
+                                        <label class="form-check-label" for="role_superuser">
+                                            Выбрать
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="mt-4">
-                        <div class="form-check mb-3">
-                            <input class="form-check-input" type="checkbox" id="agree_terms" required>
-                            <label class="form-check-label" for="agree_terms">
-                                Я согласен с <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">правилами использования</a> системы
-                            </label>
-                        </div>
-                        
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-primary btn-lg">
-                                <i class="bi bi-person-plus"></i> Зарегистрироваться
+                                <i class="bi bi-person-plus"></i> Создать пользователя
                             </button>
-                            
-                            <a href="{% url 'login' %}" class="btn btn-outline-secondary">
-                                <i class="bi bi-box-arrow-in-right"></i> Уже есть аккаунт? Войти
+                            <a href="{% url 'user_management' %}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Назад к списку пользователей
                             </a>
                         </div>
                     </div>
                 </form>
-            </div>
-        </div>
-        
-        <div class="card mt-4">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Тестовые пользователи</h5>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-4">
-                        <div class="card bg-light">
-                            <div class="card-body">
-                                <h6>Администратор</h6>
-                                <p class="mb-1"><strong>Логин:</strong> admin</p>
-                                <p class="mb-0"><strong>Пароль:</strong> admin123</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card bg-light">
-                            <div class="card-body">
-                                <h6>Воспитатель</h6>
-                                <p class="mb-1"><strong>Логин:</strong> teacher1</p>
-                                <p class="mb-0"><strong>Пароль:</strong> teacher123</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card bg-light">
-                            <div class="card-body">
-                                <h6>Родитель</h6>
-                                <p class="mb-1"><strong>Логин:</strong> parent1</p>
-                                <p class="mb-0"><strong>Пароль:</strong> parent123</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Модальное окно с правилами -->
-<div class="modal fade" id="termsModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Правила использования системы</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <h6>1. Общие положения</h6>
-                <p>Система управления детским садом предназначена для учета и управления информацией об учениках, воспитателях и родителях.</p>
-                
-                <h6>2. Обязанности пользователей</h6>
-                <ul>
-                    <li>Предоставлять достоверную информацию</li>
-                    <li>Не передавать свои учетные данные третьим лицам</li>
-                    <li>Соблюдать конфиденциальность персональных данных</li>
-                </ul>
-                
-                <h6>3. Ограничения по ролям</h6>
-                <ul>
-                    <li><strong>Родители:</strong> просмотр информации о своих детях</li>
-                    <li><strong>Воспитатели:</strong> управление посещаемостью своих групп</li>
-                    <li><strong>Заведующие:</strong> полный доступ ко всем функциям</li>
-                </ul>
-                
-                <h6>4. Конфиденциальность</h6>
-                <p>Все персональные данные защищены и не передаются третьим лицам.</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
             </div>
         </div>
     </div>
@@ -277,12 +216,11 @@
 
 {% block extra_js %}
 <script>
-// Добавляем стиль активной карточке роли
 document.addEventListener('DOMContentLoaded', function() {
     const roleCards = document.querySelectorAll('.role-card');
     const roleInputs = document.querySelectorAll('input[name="role"]');
     
-    // Добавляем классы Bootstrap к полям формы
+    // Добавляем классы к полям формы
     const inputs = document.querySelectorAll('input, select, textarea');
     inputs.forEach(input => {
         if (!input.classList.contains('form-control') && 
@@ -292,11 +230,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Обработка выбора роли
+    // Подсветка выбранной роли
     roleInputs.forEach(input => {
         input.addEventListener('change', function() {
             roleCards.forEach(card => {
-                card.classList.remove('border-primary', 'border-success', 'border-warning', 'shadow');
+                card.classList.remove('border-primary', 'border-success', 'border-warning', 'border-danger', 'shadow');
             });
             
             const selectedCard = document.querySelector(`.role-card[data-role="${this.value}"]`);
@@ -307,46 +245,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     selectedCard.classList.add('border-success');
                 } else if (this.value === 'director') {
                     selectedCard.classList.add('border-warning');
+                } else if (this.value === 'superuser') {
+                    selectedCard.classList.add('border-danger');
                 }
                 selectedCard.classList.add('shadow');
             }
         });
     });
     
-    // Инициализация при загрузке
-    const checkedInput = document.querySelector('input[name="role"]:checked');
-    if (checkedInput) {
-        checkedInput.dispatchEvent(new Event('change'));
-    }
-    
-    // Маска для телефона
-    const phoneInput = document.getElementById('phone');
-    if (phoneInput) {
-        phoneInput.addEventListener('input', function(e) {
-            let value = this.value.replace(/\D/g, '');
-            if (value.length > 0) {
-                if (!value.startsWith('7') && !value.startsWith('8')) {
-                    value = '7' + value;
-                }
-                
-                let formatted = '+7';
-                if (value.length > 1) {
-                    formatted += '-' + value.substring(1, 4);
-                }
-                if (value.length > 4) {
-                    formatted += '-' + value.substring(4, 7);
-                }
-                if (value.length > 7) {
-                    formatted += '-' + value.substring(7, 9);
-                }
-                if (value.length > 9) {
-                    formatted += '-' + value.substring(9, 11);
-                }
-                
-                this.value = formatted.substring(0, 16);
-            }
-        });
-    }
+    // Инициализация подсветки (выбираем родителя по умолчанию)
+    document.getElementById('role_parent').checked = true;
+    document.getElementById('role_parent').dispatchEvent(new Event('change'));
 });
 </script>
 
@@ -376,8 +285,15 @@ document.addEventListener('DOMContentLoaded', function() {
     border-width: 2px;
 }
 
-.form-text small {
-    font-size: 0.85rem;
+.role-card.border-danger {
+    border-width: 2px;
+}
+
+input[type="text"], 
+input[type="email"], 
+input[type="tel"], 
+input[type="password"] {
+    width: 100%;
 }
 </style>
 {% endblock %}

@@ -20,29 +20,23 @@
                     </div>
                     {% endif %}
                     
+                    <label for="{{ form.username.id_for_label }}" class="form-label">
+                        Имя пользователя
+                    </label>
                     <div class="mb-3">
-                        <label for="{{ form.username.id_for_label }}" class="form-label">
-                            Имя пользователя
-                        </label>
                         {{ form.username }}
                     </div>
-                    
+
+                    <label for="{{ form.password.id_for_label }}" class="form-label">
+                        Пароль
+                    </label>
                     <div class="mb-3">
-                        <label for="{{ form.password.id_for_label }}" class="form-label">
-                            Пароль
-                        </label>
                         {{ form.password }}
                     </div>
                     
-                    <div class="d-grid gap-2">
                         <button type="submit" class="btn btn-primary">
                             <i class="bi bi-box-arrow-in-right"></i> Войти
                         </button>
-                        
-                        <a href="{% url 'register' %}" class="btn btn-outline-secondary">
-                            <i class="bi bi-person-plus"></i> Регистрация
-                        </a>
-                    </div>
                 </form>
             </div>
         </div>

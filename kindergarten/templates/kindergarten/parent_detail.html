@@ -6,12 +6,6 @@
 <h1>Родитель: {{ parent.parent_fio }}</h1>
 
 <div class="action-buttons mb-4">
-    <a href="{% url 'parent_edit' parent.pk %}" class="btn btn-warning">
-        <i class="bi bi-pencil"></i> Редактировать
-    </a>
-    <a href="{% url 'parent_delete' parent.pk %}" class="btn btn-danger">
-        <i class="bi bi-trash"></i> Удалить
-    </a>
     <a href="{% url 'parent_list' %}" class="btn btn-secondary">
         <i class="bi bi-arrow-left"></i> Назад к списку
     </a>

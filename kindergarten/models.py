@@ -14,18 +14,22 @@ class Teacher(models.Model):
     ]
     
     teacher_id = models.AutoField(primary_key=True)
-    teacher_fio = models.CharField(max_length=100, verbose_name='ФИО воспитателя')
+    teacher_fio = models.CharField(max_length=100, verbose_name='ФИО воспитателя', db_index=True)
     teacher_position = models.CharField(max_length=50, choices=POSITION_CHOICES, 
-                                       default='Воспитатель', verbose_name='Должность')
+                                       default='Воспитатель', verbose_name='Должность', db_index=True)
     teacher_number = models.CharField(max_length=20, verbose_name='Номер телефона')
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True, 
                                related_name='teacher_profile')
+    
     def __str__(self):
         return f"{self.teacher_fio} ({self.teacher_position})"
     
     class Meta:
         verbose_name = 'Воспитатель'
         verbose_name_plural = 'Воспитатели'
+        indexes = [
+            models.Index(fields=['teacher_fio', 'teacher_position']),
+        ]
 
 class Group(models.Model):
     CATEGORY_CHOICES = [
@@ -38,10 +42,10 @@ class Group(models.Model):
     MAX_STUDENTS = 30  # Максимальная наполняемость группы
     
     group_id = models.AutoField(primary_key=True)
-    group_name = models.CharField(max_length=50, unique=True, verbose_name='Название группы')
+    group_name = models.CharField(max_length=50, unique=True, verbose_name='Название группы', db_index=True)
     group_category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, 
-                                     verbose_name='Возрастная категория')
-    group_year = models.IntegerField(verbose_name='Год обучения', default=2024)
+                                     verbose_name='Возрастная категория', db_index=True)
+    group_year = models.IntegerField(verbose_name='Год обучения', default=2024, db_index=True)
     teacher = models.ForeignKey(Teacher, on_delete=models.SET_NULL, null=True, 
                                blank=True, verbose_name='Воспитатель')
     room_number = models.CharField(max_length=10, verbose_name='Номер кабинета', 
@@ -50,6 +54,7 @@ class Group(models.Model):
                                       default=MAX_STUDENTS)
     
     def current_students_count(self):
+        """Optimized to use cached count if available"""
         return self.student_set.count()
     
     def available_places(self):
@@ -59,8 +64,6 @@ class Group(models.Model):
         return self.current_students_count() >= self.max_capacity
     
     def clean(self):
-        # Проверка: в одной группе только один воспитатель (уже обеспечено ForeignKey)
-        # Проверка максимальной наполняемости
         if self.current_students_count() > self.max_capacity:
             raise ValidationError(f'Группа не может содержать более {self.max_capacity} учеников')
     
@@ -70,16 +73,20 @@ class Group(models.Model):
     class Meta:
         verbose_name = 'Группа'
         verbose_name_plural = 'Группы'
+        indexes = [
+            models.Index(fields=['group_category', 'group_year']),
+            models.Index(fields=['teacher', 'group_year']),
+        ]
 
 class Student(models.Model):
     student_id = models.AutoField(primary_key=True)
-    student_fio = models.CharField(max_length=100, verbose_name='ФИО ученика')
-    student_birthday = models.DateField(verbose_name='Дата рождения')
+    student_fio = models.CharField(max_length=100, verbose_name='ФИО ученика', db_index=True)
+    student_birthday = models.DateField(verbose_name='Дата рождения', db_index=True)
     student_gender = models.CharField(max_length=1, choices=[('М', 'Мужской'), ('Ж', 'Женский')], 
                                      verbose_name='Пол')
     student_address = models.TextField(verbose_name='Адрес проживания', blank=True)
-    student_date_in = models.DateField(verbose_name='Дата поступления')
-    student_date_out = models.DateField(verbose_name='Дата выпуска', null=True, blank=True)
+    student_date_in = models.DateField(verbose_name='Дата поступления', db_index=True)
+    student_date_out = models.DateField(verbose_name='Дата выпуска', null=True, blank=True, db_index=True)
     group = models.ForeignKey(Group, on_delete=models.SET_NULL, null=True, 
                              verbose_name='Группа')
     
@@ -89,16 +96,13 @@ class Student(models.Model):
         return today.year - born.year - ((today.month, today.day) < (born.month, born.day))
     
     def is_active(self):
+        """Check if student is currently active"""
         return self.student_date_out is None or self.student_date_out > date.today()
     
     def clean(self):    
-        # Проверка: возраст при поступлении от 2 до 7 лет
         age_at_entry = self.age_at_entry()
         if age_at_entry < 2 or age_at_entry > 7:
             raise ValidationError('Прием детей в детский сад осуществляется только в возрасте от 2 до 7 лет')
-        
-        # Проверка: каждый ребенок только в одной группе (уже обеспечено ForeignKey)
-        # Проверка: группа не переполнена
         if self.group and self.group.is_full() and not self.pk:
             raise ValidationError(f'Группа "{self.group.group_name}" уже заполнена (максимум {self.group.max_capacity} учеников)')
     
@@ -116,6 +120,10 @@ class Student(models.Model):
     class Meta:
         verbose_name = 'Ученик'
         verbose_name_plural = 'Ученики'
+        indexes = [
+            models.Index(fields=['group', 'student_date_out']),  # For active students in group
+            models.Index(fields=['student_fio', 'student_birthday']),  # For search queries
+        ]
 
 class Parent(models.Model):
     RELATIONSHIP_CHOICES = [
@@ -128,16 +136,20 @@ class Parent(models.Model):
     ]
     
     parent_id = models.AutoField(primary_key=True)
-    parent_fio = models.CharField(max_length=100, verbose_name='ФИО родителя')
-    parent_number = models.CharField(max_length=20, verbose_name='Номер телефона')
+    parent_fio = models.CharField(max_length=100, verbose_name='ФИО родителя', db_index=True)
+    parent_number = models.CharField(max_length=20, verbose_name='Номер телефона', db_index=True)
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True, 
                                related_name='parent_profile')
+    
     def __str__(self):
         return self.parent_fio
     
     class Meta:
         verbose_name = 'Родитель'
         verbose_name_plural = 'Родители'
+        indexes = [
+            models.Index(fields=['parent_fio', 'parent_number']),
+        ]
 
 class StudentParent(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE, verbose_name='Ученик')
@@ -156,8 +168,8 @@ class StudentParent(models.Model):
 
 class Attendance(models.Model):
     attendance_id = models.AutoField(primary_key=True)
-    attendance_date = models.DateField(verbose_name='Дата посещения')
-    status = models.BooleanField(verbose_name='Статус', choices=[(True, 'Присутствовал'), (False, 'Отсутствовал')])
+    attendance_date = models.DateField(verbose_name='Дата посещения', db_index=True)
+    status = models.BooleanField(verbose_name='Статус', choices=[(True, 'Присутствовал'), (False, 'Отсутствовал')], db_index=True)
     student = models.ForeignKey(Student, on_delete=models.CASCADE, verbose_name='Ученик')
     reason = models.CharField(max_length=100, verbose_name='Причина отсутствия', blank=True, 
                              choices=[
@@ -178,6 +190,11 @@ class Attendance(models.Model):
         verbose_name = 'Посещаемость'
         verbose_name_plural = 'Посещаемость'
         unique_together = ('attendance_date', 'student')  # Одна запись на день для ученика
+        indexes = [
+            models.Index(fields=['student', 'attendance_date']),  # For student attendance history
+            models.Index(fields=['attendance_date', 'status']),  # For daily reports
+            models.Index(fields=['student', 'status', 'attendance_date']),  # For student status queries
+        ]
 
 class Event(models.Model):
     EVENT_TYPES = [

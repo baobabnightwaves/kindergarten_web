@@ -1,20 +1,39 @@
+# kindergarten/views.py
 from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.core.exceptions import ValidationError
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Count, Q
 from datetime import date, timedelta
 import csv
 from django.http import HttpResponse, JsonResponse
-from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 
+# Импорты моделей - без дублирования
 from .models import Student, Teacher, Group, Parent, Attendance, StudentParent, Event
 from .forms import StudentForm, TeacherForm, GroupForm, ParentForm, AttendanceForm, StudentParentForm, EventForm
-from .forms import AddChildToParentForm, AddParentToChildForm  # Добавьте эти импорты
+from .forms import AddChildToParentForm, AddParentToChildForm
+
+# Функции проверки прав
+def is_director_or_superuser(user):
+    """Проверка, является ли пользователь заведующим или суперпользователем"""
+    return user.groups.filter(name='Заведующие').exists() or user.is_superuser
+
+def is_teacher_director_or_superuser(user):
+    """Проверка, является ли пользователь воспитателем, заведующим или суперпользователем"""
+    return (
+        user.groups.filter(name='Воспитатели').exists() or 
+        user.groups.filter(name='Заведующие').exists() or 
+        user.is_superuser
+    )
+
+def is_superuser(user):
+    """Проверка, является ли пользователь суперпользователем"""
+    return user.is_superuser
 
 # ========== ГЛАВНАЯ СТРАНИЦА ==========
 def home(request):
-    """Главная страница со статистикой"""
     today = date.today()
     
     stats = {
@@ -26,29 +45,84 @@ def home(request):
         'absent_today': Attendance.objects.filter(attendance_date=today, status=False).count(),
     }
     
-    return render(request, 'kindergarten/home.html', {'stats': stats})
+    context = {
+        'students_count': stats['total_students'],
+        'teachers_count': stats['total_teachers'],
+        'groups_count': stats['total_groups'],
+        'stats': stats,
+    }
+    
+    return render(request, 'kindergarten/home.html', context)
+
+def groups_context(request):
+    return {
+        'groups': Group.objects.all()
+    }
 
 # ========== УЧЕНИКИ ==========
 @login_required
+@user_passes_test(is_teacher_director_or_superuser, login_url='home')
 def student_list(request):
-    """Список учеников"""
+    """Список учеников с поиском и фильтрацией"""
     students = Student.objects.all().select_related('group')
     
-    # Фильтрация
-    group_filter = request.GET.get('group')
-    status_filter = request.GET.get('status')
+    # Применяем фильтры в зависимости от роли пользователя
+    if request.user.groups.filter(name='Воспитатели').exists() and hasattr(request.user, 'teacher_profile'):
+        # Для воспитателя - только его ученики
+        teacher = request.user.teacher_profile
+        teacher_groups = Group.objects.filter(teacher=teacher)  # Используем Group, не KindergartenGroup
+        students = students.filter(group__in=teacher_groups)
     
+    # Получаем параметры фильтрации
+    search_query = request.GET.get('search', '')
+    group_filter = request.GET.get('group', '')
+    status_filter = request.GET.get('status', '')
+    
+    # Применяем поиск по ФИО
+    if search_query:
+        students = students.filter(student_fio__icontains=search_query)
+    
+    # Применяем фильтр по группе
     if group_filter:
         students = students.filter(group_id=group_filter)
+        selected_group = get_object_or_404(Group, pk=group_filter)
+    else:
+        selected_group = None
+    
+    # Применяем фильтр по статусу
     if status_filter == 'active':
         students = students.filter(student_date_out__isnull=True)
     elif status_filter == 'graduated':
         students = students.filter(student_date_out__isnull=False)
     
-    groups = Group.objects.all()
+    # Получаем доступные группы для фильтра
+    if request.user.groups.filter(name='Воспитатели').exists() and hasattr(request.user, 'teacher_profile'):
+        # Для воспитателя - только его группы
+        teacher = request.user.teacher_profile
+        groups = Group.objects.filter(teacher=teacher)
+    elif request.user.groups.filter(name='Заведующие').exists() or request.user.is_superuser:
+        # Для заведующих и суперпользователей - все группы
+        groups = Group.objects.all()
+    else:
+        groups = Group.objects.none()
+    
+    # Сортировка и пагинация
+    students = students.order_by('student_fio')
+    
+    # Пагинация
+    paginator = Paginator(students, 25)
+    page_number = request.GET.get('page')
+    try:
+        page_obj = paginator.get_page(page_number)
+    except PageNotAnInteger:
+        page_obj = paginator.get_page(1)
+    except EmptyPage:
+        page_obj = paginator.get_page(paginator.num_pages)
+    
     return render(request, 'kindergarten/student_list.html', {
-        'students': students,
+        'students': page_obj,
         'groups': groups,
+        'selected_group': selected_group,
     })
 
 @login_required
@@ -66,6 +140,7 @@ def student_detail(request, pk):
     })
 
 @login_required
+@user_passes_test(is_director_or_superuser, login_url='home')
 def student_create(request):
     """Создание нового ученика"""
     if request.method == 'POST':
@@ -83,6 +158,7 @@ def student_create(request):
     return render(request, 'kindergarten/student_form.html', {'form': form, 'title': 'Добавление ученика'})
 
 @login_required
+@user_passes_test(is_director_or_superuser, login_url='home')
 def student_edit(request, pk):
     """Редактирование ученика"""
     student = get_object_or_404(Student, pk=pk)
@@ -101,8 +177,8 @@ def student_edit(request, pk):
     return render(request, 'kindergarten/student_form.html', {'form': form, 'title': 'Редактирование ученика'})
 
 @login_required
+@user_passes_test(is_director_or_superuser, login_url='home')
 def student_delete(request, pk):
-    """Удаление ученика"""
     student = get_object_or_404(Student, pk=pk)
     if request.method == 'POST':
         student_name = student.student_fio
@@ -115,13 +191,11 @@ def student_delete(request, pk):
 # ========== ВОСПИТАТЕЛИ ==========
 @login_required
 def teacher_list(request):
-    """Список воспитателей"""
     teachers = Teacher.objects.all()
     return render(request, 'kindergarten/teacher_list.html', {'teachers': teachers})
 
 @login_required
 def teacher_detail(request, pk):
-    """Детальная информация о воспитателе"""
     teacher = get_object_or_404(Teacher, pk=pk)
     groups = Group.objects.filter(teacher=teacher)
     
@@ -132,7 +206,6 @@ def teacher_detail(request, pk):
 
 @login_required
 def teacher_create(request):
-    """Создание нового воспитателя"""
     if request.method == 'POST':
         form = TeacherForm(request.POST)
         if form.is_valid():
@@ -146,7 +219,6 @@ def teacher_create(request):
 
 @login_required
 def teacher_edit(request, pk):
-    """Редактирование воспитателя"""
     teacher = get_object_or_404(Teacher, pk=pk)
     if request.method == 'POST':
         form = TeacherForm(request.POST, instance=teacher)
@@ -161,7 +233,6 @@ def teacher_edit(request, pk):
 
 @login_required
 def teacher_delete(request, pk):
-    """Удаление воспитателя"""
     teacher = get_object_or_404(Teacher, pk=pk)
     if request.method == 'POST':
         teacher_name = teacher.teacher_fio
@@ -173,9 +244,28 @@ def teacher_delete(request, pk):
 
 # ========== ГРУППЫ ==========
 @login_required
+@user_passes_test(is_teacher_director_or_superuser, login_url='home')
 def group_list(request):
     """Список групп с информацией о наполняемости"""
-    groups = Group.objects.all().select_related('teacher')
+    # Для воспитателей показываем только их группы
+    if request.user.groups.filter(name='Воспитатели').exists() and hasattr(request.user, 'teacher_profile'):
+        teacher = request.user.teacher_profile
+        groups = Group.objects.filter(teacher=teacher).select_related('teacher')
+    # Для заведующих и суперпользователей показываем все группы
+    elif request.user.groups.filter(name='Заведующие').exists() or request.user.is_superuser:
+        groups = Group.objects.all().select_related('teacher')
+    else:
+        # Для родителей показываем только группу их ребенка
+        if hasattr(request.user, 'parent_profile'):
+            parent = request.user.parent_profile
+            # Получаем группы детей родителя
+            child_groups = set()
+            for relation in parent.studentparent_set.all():
+                if relation.student.group:
+                    child_groups.add(relation.student.group.pk)
+            groups = Group.objects.filter(pk__in=child_groups).select_related('teacher')
+        else:
+            groups = Group.objects.none()
     
     # Добавляем статистику для каждой группы
     for group in groups:
@@ -190,7 +280,6 @@ def group_list(request):
 
 @login_required
 def group_detail(request, pk):
-    """Детальная информация о группе"""
     group = get_object_or_404(Group, pk=pk)
     students = Student.objects.filter(group=group)
     
@@ -207,8 +296,8 @@ def group_detail(request, pk):
     })
 
 @login_required
+@user_passes_test(is_director_or_superuser, login_url='home')
 def group_create(request):
-    """Создание группы"""
     if request.method == 'POST':
         form = GroupForm(request.POST)
         if form.is_valid():
@@ -221,8 +310,8 @@ def group_create(request):
     return render(request, 'kindergarten/group_form.html', {'form': form, 'title': 'Создание группы'})
 
 @login_required
+@user_passes_test(is_director_or_superuser, login_url='home')
 def group_edit(request, pk):
-    """Редактирование группы"""
     group = get_object_or_404(Group, pk=pk)
     if request.method == 'POST':
         form = GroupForm(request.POST, instance=group)
@@ -236,11 +325,10 @@ def group_edit(request, pk):
     return render(request, 'kindergarten/group_form.html', {'form': form, 'title': 'Редактирование группы'})
 
 @login_required
+@user_passes_test(is_director_or_superuser, login_url='home')
 def group_delete(request, pk):
-    """Удаление группы"""
     group = get_object_or_404(Group, pk=pk)
     if request.method == 'POST':
-        # Проверка: нельзя удалить группу с учениками
         if group.current_students_count() > 0:
             messages.error(request, f'Нельзя удалить группу с учениками! Сначала переведите учеников в другие группы.')
             return redirect('group_detail', pk=group.pk)
@@ -254,14 +342,27 @@ def group_delete(request, pk):
 
 # ========== РОДИТЕЛИ ==========
 @login_required
+@user_passes_test(is_teacher_director_or_superuser, login_url='home')
 def parent_list(request):
     """Список родителей"""
     parents = Parent.objects.all()
-    return render(request, 'kindergarten/parent_list.html', {'parents': parents})
+    
+    # Если пользователь - воспитатель, показываем только родителей его учеников
+    if request.user.groups.filter(name='Воспитатели').exists() and hasattr(request.user, 'teacher_profile'):
+        teacher = request.user.teacher_profile
+        teacher_groups = Group.objects.filter(teacher=teacher)
+        # Получаем учеников из групп воспитателя
+        teacher_students = Student.objects.filter(group__in=teacher_groups)
+        # Получаем ID родителей этих учеников
+        parent_ids = StudentParent.objects.filter(student__in=teacher_students).values_list('parent_id', flat=True)
+        parents = parents.filter(pk__in=parent_ids)
+    
+    return render(request, 'kindergarten/parent_list.html', {
+        'parents': parents,
+    })
 
 @login_required
 def parent_detail(request, pk):
-    """Детальная информация о родителе"""
     parent = get_object_or_404(Parent, pk=pk)
     children = StudentParent.objects.filter(parent=parent).select_related('student')
     
@@ -272,7 +373,6 @@ def parent_detail(request, pk):
 
 @login_required
 def parent_create(request):
-    """Создание нового родителя"""
     if request.method == 'POST':
         form = ParentForm(request.POST)
         if form.is_valid():
@@ -286,7 +386,6 @@ def parent_create(request):
 
 @login_required
 def parent_edit(request, pk):
-    """Редактирование родителя"""
     parent = get_object_or_404(Parent, pk=pk)
     if request.method == 'POST':
         form = ParentForm(request.POST, instance=parent)
@@ -301,7 +400,6 @@ def parent_edit(request, pk):
 
 @login_required
 def parent_delete(request, pk):
-    """Удаление родителя"""
     parent = get_object_or_404(Parent, pk=pk)
     if request.method == 'POST':
         parent_name = parent.parent_fio
@@ -314,7 +412,6 @@ def parent_delete(request, pk):
 # ========== СВЯЗИ РОДИТЕЛЬ-РЕБЕНОК ==========
 @login_required
 def add_child_to_parent(request, parent_id):
-    """Добавление ребенка к родителю"""
     parent = get_object_or_404(Parent, pk=parent_id)
     
     if request.method == 'POST':
@@ -324,7 +421,6 @@ def add_child_to_parent(request, parent_id):
             relationship_type = form.cleaned_data['relationship_type']
             is_primary = form.cleaned_data['is_primary']
             
-            # Проверяем, нет ли уже такой связи
             if not StudentParent.objects.filter(parent=parent, student=student).exists():
                 StudentParent.objects.create(
                     parent=parent,
@@ -348,7 +444,6 @@ def add_child_to_parent(request, parent_id):
 
 @login_required
 def add_parent_to_child(request, student_id):
-    """Добавление родителя к ребенку"""
     student = get_object_or_404(Student, pk=student_id)
     
     if request.method == 'POST':
@@ -358,7 +453,6 @@ def add_parent_to_child(request, student_id):
             relationship_type = form.cleaned_data['relationship_type']
             is_primary = form.cleaned_data['is_primary']
             
-            # Проверяем, нет ли уже такой связи
             if not StudentParent.objects.filter(parent=parent, student=student).exists():
                 StudentParent.objects.create(
                     parent=parent,
@@ -382,7 +476,6 @@ def add_parent_to_child(request, student_id):
 
 @login_required
 def remove_parent_child_relation(request, relation_id):
-    """Удаление связи родитель-ребенок"""
     relation = get_object_or_404(StudentParent, pk=relation_id)
     
     if request.method == 'POST':
@@ -390,9 +483,7 @@ def remove_parent_child_relation(request, relation_id):
         parent_name = relation.parent.parent_fio
         relation.delete()
         
-        messages.success(request, f'Связь между {parent_name} и {student_name} удалена')
-        
-        # Редирект обратно на страницу, откуда пришли
+        messages.success(request, f'Связь между {parent_name} и {student_name} удалена')        
         referer = request.META.get('HTTP_REFERER')
         if referer:
             return redirect(referer)
@@ -405,10 +496,9 @@ def remove_parent_child_relation(request, relation_id):
 # ========== ПОСЕЩАЕМОСТЬ ==========
 @login_required
 def attendance_list(request):
-    """Журнал посещаемости с фильтрацией по группе и дате"""
+    """Журнал посещаемости с фильтрацией по группам воспитателя"""
     today = date.today()
     
-    # Получаем параметры фильтрации
     date_filter = request.GET.get('date', today.strftime('%Y-%m-%d'))
     group_filter = request.GET.get('group', '')
     
@@ -417,28 +507,67 @@ def attendance_list(request):
     except (ValueError, TypeError):
         filter_date = today
     
-    # Получаем все группы
-    groups = Group.objects.all()
+    # Получаем доступные группы в зависимости от роли
+    if request.user.groups.filter(name='Воспитатели').exists() and hasattr(request.user, 'teacher_profile'):
+        # Для воспитателя - только его группы
+        teacher = request.user.teacher_profile
+        available_groups = Group.objects.filter(teacher=teacher)
+        
+        # Если выбрана группа, проверяем что она принадлежит воспитателю
+        if group_filter:
+            if not available_groups.filter(pk=group_filter).exists():
+                group_filter = ''
+                messages.warning(request, 'Выбранная группа не доступна')
+    elif request.user.groups.filter(name='Заведующие').exists() or request.user.is_superuser:
+        # Для заведующих и суперпользователей - все группы
+        available_groups = Group.objects.all()
+    else:
+        # Для родителей - только группа их ребенка
+        if hasattr(request.user, 'parent_profile'):
+            parent = request.user.parent_profile
+            child_groups = set()
+            for relation in parent.studentparent_set.all():
+                if relation.student.group:
+                    child_groups.add(relation.student.group.pk)
+            available_groups = Group.objects.filter(pk__in=child_groups)
+        else:
+            available_groups = Group.objects.none()
     
-    # Получаем посещаемость с фильтрами
     attendance_query = Attendance.objects.filter(attendance_date=filter_date)
     
     if group_filter:
         attendance_query = attendance_query.filter(student__group_id=group_filter)
+    else:
+        # Если группа не выбрана, для воспитателя показываем учеников из всех его групп
+        if request.user.groups.filter(name='Воспитатели').exists():
+            teacher_groups = available_groups
+            attendance_query = attendance_query.filter(student__group__in=teacher_groups)
     
     attendance = attendance_query.select_related('student', 'student__group')
     
-    # Получаем список учеников для выбранной группы
-    students = Student.objects.filter(student_date_out__isnull=True)
+    # Получаем учеников для отображения
     if group_filter:
-        students = students.filter(group_id=group_filter)
+        students = Student.objects.filter(
+            student_date_out__isnull=True,
+            group_id=group_filter
+        )
+    else:
+        # Если группа не выбрана, для воспитателя показываем всех учеников из его групп
+        if request.user.groups.filter(name='Воспитатели').exists():
+            teacher_groups = available_groups
+            students = Student.objects.filter(
+                student_date_out__isnull=True,
+                group__in=teacher_groups
+            )
+        else:
+            students = Student.objects.filter(student_date_out__isnull=True)
+            if available_groups.exists():
+                students = students.filter(group__in=available_groups)
     
-    # Создаем словарь для быстрого доступа к посещаемости по student_id
     attendance_dict = {}
     for record in attendance:
         attendance_dict[record.student_id] = record
     
-    # Создаем список студентов с их записями посещаемости
     students_with_attendance = []
     for student in students:
         attendance_record = attendance_dict.get(student.pk)
@@ -452,14 +581,12 @@ def attendance_list(request):
         'students_with_attendance': students_with_attendance,
         'filter_date': filter_date,
         'group_filter': group_filter,
-        'groups': groups,
+        'groups': available_groups,
         'today': today,
-        'attendance_dict': attendance_dict,
     })
 
 @login_required
 def attendance_mark_bulk(request):
-    """Массовая отметка посещаемости"""
     if request.method == 'POST':
         date_str = request.POST.get('date')
         group_id = request.POST.get('group_id')
@@ -467,18 +594,15 @@ def attendance_mark_bulk(request):
         try:
             attendance_date = date.fromisoformat(date_str)
             
-            # Получаем учеников выбранной группы
             students = Student.objects.filter(
                 student_date_out__isnull=True,
                 group_id=group_id
             )
             
-            # Получаем текущего пользователя (воспитателя)
             teacher = None
             if request.user.is_authenticated and hasattr(request.user, 'teacher_profile'):
                 teacher = request.user.teacher_profile
             
-            # Обрабатываем каждую запись
             for student in students:
                 status_key = f'status_{student.student_id}'
                 reason_key = f'reason_{student.student_id}'
@@ -487,7 +611,6 @@ def attendance_mark_bulk(request):
                     status = request.POST.get(status_key) == 'true'
                     reason = request.POST.get(reason_key, '')
                     
-                    # Создаем или обновляем запись
                     Attendance.objects.update_or_create(
                         attendance_date=attendance_date,
                         student=student,
@@ -509,7 +632,6 @@ def attendance_mark_bulk(request):
 
 @login_required
 def attendance_update(request, pk):
-    """Обновление отдельной записи посещаемости"""
     if request.method == 'POST':
         attendance = get_object_or_404(Attendance, pk=pk)
         status = request.POST.get('status') == 'true'
@@ -525,7 +647,6 @@ def attendance_update(request, pk):
 
 @login_required
 def attendance_create(request):
-    """Создание записи о посещаемости"""
     if request.method == 'POST':
         form = AttendanceForm(request.POST)
         if form.is_valid():
@@ -539,7 +660,6 @@ def attendance_create(request):
 
 @login_required
 def attendance_edit(request, pk):
-    """Редактирование посещаемости"""
     attendance = get_object_or_404(Attendance, pk=pk)
     if request.method == 'POST':
         form = AttendanceForm(request.POST, instance=attendance)
@@ -554,7 +674,6 @@ def attendance_edit(request, pk):
 
 @login_required
 def attendance_delete(request, pk):
-    """Удаление посещаемости"""
     attendance = get_object_or_404(Attendance, pk=pk)
     if request.method == 'POST':
         attendance.delete()
@@ -566,16 +685,13 @@ def attendance_delete(request, pk):
 # ========== ОТЧЕТЫ ==========
 @login_required
 def reports(request):
-    """Страница отчетов"""
     return render(request, 'kindergarten/reports.html')
 
 @login_required
 def generate_report(request, report_type):
-    """Генерация отчетов"""
     from datetime import datetime
     
     if report_type == 'students_csv':
-        # Экспорт учеников в CSV
         response = HttpResponse(content_type='text/csv; charset=utf-8-sig')
         response['Content-Disposition'] = f'attachment; filename="students_{datetime.now().strftime("%Y%m%d")}.csv"'
         
@@ -599,12 +715,10 @@ def generate_report(request, report_type):
         return response
     
     elif report_type == 'attendance_month':
-        # Отчет по посещаемости за месяц
         today = date.today()
         month = int(request.GET.get('month', today.month))
         year = int(request.GET.get('year', today.year))
         
-        # Данные посещаемости
         attendance = Attendance.objects.filter(
             attendance_date__month=month,
             attendance_date__year=year
@@ -614,7 +728,6 @@ def generate_report(request, report_type):
         absent_count = attendance.filter(status=False).count()
         total = present_count + absent_count
         
-        # Процент посещаемости
         attendance_rate = 0
         if total > 0:
             attendance_rate = round((present_count / total * 100), 2)
@@ -640,7 +753,6 @@ def generate_report(request, report_type):
 # ========== ПОИСК ==========
 @login_required
 def search(request):
-    """Поиск по всем данным"""
     query = request.GET.get('q', '')
     if query:
         students = Student.objects.filter(student_fio__icontains=query)
@@ -658,9 +770,8 @@ def search(request):
         'parents': parents,
     })
 
-# ========== API для статистики ==========
+# ========== API ==========
 def api_stats(request):
-    """API для получения статистики"""
     today = date.today()
     
     stats = {
@@ -672,7 +783,6 @@ def api_stats(request):
         'absent_today': Attendance.objects.filter(attendance_date=today, status=False).count(),
     }
     
-    # Распределение по группам
     groups_stats = []
     for group in Group.objects.all():
         groups_stats.append({
@@ -684,7 +794,6 @@ def api_stats(request):
         })
     stats['groups_stats'] = groups_stats
     
-    # Посещаемость за последние 7 дней
     attendance_data = []
     attendance_labels = []
     

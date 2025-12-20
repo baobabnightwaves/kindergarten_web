@@ -1,52 +1,43 @@
 from django.urls import path
-from . import views
-from . import views_auth
+from . import reports_views, views, views_auth, users_views
 
 urlpatterns = [
-    # Аутентификация
     path('accounts/login/', views_auth.login_view, name='login'),
     path('accounts/logout/', views_auth.logout_view, name='logout'),
     path('accounts/register/', views_auth.register_view, name='register'),
     path('accounts/profile/', views_auth.profile_view, name='profile'),
     
-    # Главная
     path('', views.home, name='home'),
     path('search/', views.search, name='search'),
     
-    # Ученики
     path('students/', views.student_list, name='student_list'),
     path('students/<int:pk>/', views.student_detail, name='student_detail'),
     path('students/new/', views.student_create, name='student_create'),
     path('students/<int:pk>/edit/', views.student_edit, name='student_edit'),
     path('students/<int:pk>/delete/', views.student_delete, name='student_delete'),
     
-    # Воспитатели
     path('teachers/', views.teacher_list, name='teacher_list'),
     path('teachers/<int:pk>/', views.teacher_detail, name='teacher_detail'),
     path('teachers/new/', views.teacher_create, name='teacher_create'),
     path('teachers/<int:pk>/edit/', views.teacher_edit, name='teacher_edit'),
     path('teachers/<int:pk>/delete/', views.teacher_delete, name='teacher_delete'),
     
-    # Группы
     path('groups/', views.group_list, name='group_list'),
     path('groups/<int:pk>/', views.group_detail, name='group_detail'),
     path('groups/new/', views.group_create, name='group_create'),
     path('groups/<int:pk>/edit/', views.group_edit, name='group_edit'),
     path('groups/<int:pk>/delete/', views.group_delete, name='group_delete'),
     
-    # Родители
     path('parents/', views.parent_list, name='parent_list'),
     path('parents/<int:pk>/', views.parent_detail, name='parent_detail'),
     path('parents/new/', views.parent_create, name='parent_create'),
     path('parents/<int:pk>/edit/', views.parent_edit, name='parent_edit'),
     path('parents/<int:pk>/delete/', views.parent_delete, name='parent_delete'),
     
-    # Связи родитель-ребенок
     path('parents/<int:parent_id>/add-child/', views.add_child_to_parent, name='add_child_to_parent'),
     path('students/<int:student_id>/add-parent/', views.add_parent_to_child, name='add_parent_to_child'),
     path('relations/<int:relation_id>/remove/', views.remove_parent_child_relation, name='remove_parent_child_relation'),
     
-    # Посещаемость
     path('attendance/', views.attendance_list, name='attendance_list'),
     path('attendance/mark-bulk/', views.attendance_mark_bulk, name='attendance_mark_bulk'),
     path('attendance/update/<int:pk>/', views.attendance_update, name='attendance_update'),
@@ -54,10 +45,18 @@ urlpatterns = [
     path('attendance/<int:pk>/edit/', views.attendance_edit, name='attendance_edit'),
     path('attendance/<int:pk>/delete/', views.attendance_delete, name='attendance_delete'),
     
-    # Отчеты
-    path('reports/', views.reports, name='reports'),
-    path('reports/<str:report_type>/', views.generate_report, name='generate_report'),
+    path('reports/dashboard/', reports_views.reports_dashboard, name='reports_dashboard'),
+    path('reports/generate/<str:report_type>/', reports_views.generate_report_view, name='generate_report'),
+    path('reports/builder/', reports_views.report_builder, name='report_builder'),
+    path('api/dashboard-data/', reports_views.api_dashboard_data, name='api_dashboard_data'),
     
-    # API
     path('api/stats/', views.api_stats, name='api_stats'),
+
+    path('users/', users_views.user_management, name='user_management'),
+    path('users/create/', users_views.create_user, name='create_user'),
+    path('users/<int:user_id>/edit/', users_views.edit_user, name='edit_user'),
+    path('users/<int:user_id>/change-password/', users_views.change_user_password, name='change_user_password'),
+    path('users/<int:user_id>/activate/', users_views.activate_user, name='activate_user'),
+    path('users/<int:user_id>/deactivate/', users_views.deactivate_user, name='deactivate_user'),
+    path('users/<int:user_id>/delete/', users_views.delete_user, name='delete_user'),
 ]

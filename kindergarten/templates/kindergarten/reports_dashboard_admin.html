@@ -1,0 +1,275 @@
+{% extends 'kindergarten/base.html' %}
+{% load static %}
+
+{% block title %}Дашборд отчетов{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="mb-4"><i class="bi bi-bar-chart"></i> Дашборд отчетов</h1>
+    
+    <!-- Быстрые отчеты -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-lightning"></i> Быстрые отчеты</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'generate_report' 'overall_stats' %}?format=csv" class="btn btn-outline-primary w-100">
+                                <i class="bi bi-download"></i> Общая статистика (CSV)
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'generate_report' 'detailed_attendance' %}" class="btn btn-outline-success w-100">
+                                <i class="bi bi-calendar-check"></i> Посещаемость
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'generate_report' 'financial_report' %}" class="btn btn-outline-warning w-100">
+                                <i class="bi bi-cash"></i> Финансовый отчет
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'report_builder' %}" class="btn btn-outline-info w-100">
+                                <i class="bi bi-gear"></i> Конструктор отчетов
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Статистика -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <h5 class="card-title">Ученики</h5>
+                    <h2>{{ total_students }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-success">
+                <div class="card-body">
+                    <h5 class="card-title">Воспитатели</h5>
+                    <h2>{{ total_teachers }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-info">
+                <div class="card-body">
+                    <h5 class="card-title">Группы</h5>
+                    <h2>{{ total_groups }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-warning">
+                <div class="card-body">
+                    <h5 class="card-title">Родители</h5>
+                    <h2>{{ total_parents }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Диаграммы -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-graph-up"></i> Посещаемость за последние 7 дней</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="attendanceChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-pie-chart"></i> Распределение по возрастам</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="ageChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Таблицы -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-people"></i> Наполняемость групп</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Группа</th>
+                                    <th>Учеников</th>
+                                    <th>Вместимость</th>
+                                    <th>Заполнено</th>
+                                    <th>Процент</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for group in group_capacity %}
+                                <tr>
+                                    <td>{{ group.name }}</td>
+                                    <td>{{ group.current }}</td>
+                                    <td>{{ group.capacity }}</td>
+                                    <td>
+                                        <div class="progress" style="height: 20px;">
+                                            <div class="progress-bar {% if group.percentage > 90 %}bg-danger{% elif group.percentage > 70 %}bg-warning{% else %}bg-success{% endif %}" 
+                                                 role="progressbar" style="width: {{ group.percentage }}%">
+                                                {{ group.percentage }}%
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ group.percentage }}%</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-calendar-day"></i> Посещаемость по группам (сегодня)</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Группа</th>
+                                    <th>Присутствуют</th>
+                                    <th>Отсутствуют</th>
+                                    <th>Посещаемость</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for group in group_attendance_today %}
+                                <tr>
+                                    <td>{{ group.group }}</td>
+                                    <td><span class="badge bg-success">{{ group.present }}</span></td>
+                                    <td><span class="badge bg-danger">{{ group.absent }}</span></td>
+                                    <td>
+                                        <div class="progress" style="height: 20px;">
+                                            <div class="progress-bar {% if group.rate < 70 %}bg-danger{% elif group.rate < 90 %}bg-warning{% else %}bg-success{% endif %}" 
+                                                 role="progressbar" style="width: {{ group.rate }}%">
+                                                {{ group.rate }}%
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Загружаем данные для диаграмм через AJAX
+    fetch('{% url "api_dashboard_data" %}')
+        .then(response => response.json())
+        .then(data => {
+            // Диаграмма посещаемости
+            const attendanceCtx = document.getElementById('attendanceChart').getContext('2d');
+            new Chart(attendanceCtx, {
+                type: 'bar',
+                data: data.attendance_chart,
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Количество детей'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Диаграмма возрастов
+            const ageCtx = document.getElementById('ageChart').getContext('2d');
+            new Chart(ageCtx, {
+                type: 'pie',
+                data: data.age_chart,
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                        }
+                    }
+                }
+            });
+            
+            // Обновляем статистику на странице
+            updateStats(data.group_stats);
+        })
+        .catch(error => console.error('Ошибка загрузки данных:', error));
+    
+    function updateStats(groupStats) {
+        // Можно добавить динамическое обновление статистики
+        console.log('Статистика групп обновлена:', groupStats);
+    }
+});
+</script>
+
+<style>
+.progress {
+    margin-bottom: 0;
+    min-width: 100px;
+}
+
+.card {
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,.1);
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.table th {
+    font-weight: 600;
+    background-color: #f8f9fa;
+}
+
+.badge {
+    font-size: 0.85em;
+    padding: 0.35em 0.65em;
+}
+</style>
+{% endblock %}

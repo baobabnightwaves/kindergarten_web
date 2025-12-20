@@ -1,0 +1,514 @@
+{% extends 'kindergarten/base.html' %}
+
+{% block title %}Управление пользователями{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="bi bi-people"></i> Управление пользователями</h1>
+        <a href="{% url 'create_user' %}" class="btn btn-primary">
+            <i class="bi bi-person-plus"></i> Создать нового пользователя
+        </a>
+    </div>
+
+    <!-- Фильтры и поиск -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label for="search" class="form-label">Поиск</label>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           value="{{ request.GET.search }}" placeholder="Поиск по имени или username...">
+                </div>
+                <div class="col-md-3">
+                    <label for="role" class="form-label">Роль</label>
+                    <select class="form-select" id="role" name="role">
+                        <option value="">Все роли</option>
+                        <option value="Заведующие" {% if request.GET.role == 'Заведующие' %}selected{% endif %}>Заведующие</option>
+                        <option value="Воспитатели" {% if request.GET.role == 'Воспитатели' %}selected{% endif %}>Воспитатели</option>
+                        <option value="Родители" {% if request.GET.role == 'Родители' %}selected{% endif %}>Родители</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="status" class="form-label">Статус</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="">Все</option>
+                        <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Активные</option>
+                        <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Неактивные</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-funnel"></i> Фильтровать
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Статистика -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <h5 class="card-title">Всего пользователей</h5>
+                    <h2>{{ users.paginator.count }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-success">
+                <div class="card-body">
+                    <h5 class="card-title">Заведующие</h5>
+                    <h2>{{ director_count }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-info">
+                <div class="card-body">
+                    <h5 class="card-title">Воспитатели</h5>
+                    <h2>{{ teacher_count }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-warning">
+                <div class="card-body">
+                    <h5 class="card-title">Родители</h5>
+                    <h2>{{ parent_count }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Таблица пользователей -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Имя пользователя</th>
+                            <th>ФИО</th>
+                            <th>Роль</th>
+                            <th>Телефон</th>
+                            <th>Email</th>
+                            <th>Дата регистрации</th>
+                            <th>Статус</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>{{ user.id }}</td>
+                            <td>
+                                <strong>{{ user.username }}</strong>
+                                {% if user.is_superuser %}
+                                    <span class="badge bg-danger">Суперпользователь</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user.parent_profile %}
+                                    {{ user.parent_profile.parent_fio }}
+                                {% elif user.teacher_profile %}
+                                    {{ user.teacher_profile.teacher_fio }}
+                                {% else %}
+                                    {{ user.first_name }} {{ user.last_name }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user.groups.all %}
+                                    {% for group in user.groups.all %}
+                                        <span class="badge 
+                                            {% if group.name == 'Заведующие' %}bg-warning
+                                            {% elif group.name == 'Воспитатели' %}bg-success
+                                            {% elif group.name == 'Родители' %}bg-info
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ group.name }}
+                                        </span>
+                                    {% endfor %}
+                                {% else %}
+                                    <span class="badge bg-secondary">Нет роли</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user.parent_profile %}
+                                    {{ user.parent_profile.parent_number }}
+                                {% elif user.teacher_profile %}
+                                    {{ user.teacher_profile.teacher_number }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>{{ user.email|default:"-" }}</td>
+                            <td>{{ user.date_joined|date:"d.m.Y H:i" }}</td>
+                            <td>
+                                {% if user.is_active %}
+                                    <span class="badge bg-success">Активен</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Неактивен</span>
+                                {% endif %}
+                                {% if user.is_staff %}
+                                    <span class="badge bg-dark">Персонал</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" 
+                                            data-bs-toggle="dropdown" aria-expanded="false">
+                                        Действия
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li>
+                                            <a class="dropdown-item" href="#" data-bs-toggle="modal" 
+                                               data-bs-target="#editUserModal{{ user.id }}">
+                                                <i class="bi bi-pencil"></i> Редактировать
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" href="#" data-bs-toggle="modal" 
+                                               data-bs-target="#changePasswordModal{{ user.id }}">
+                                                <i class="bi bi-key"></i> Сменить пароль
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            {% if user.is_active %}
+                                                <a class="dropdown-item text-danger" href="{% url 'deactivate_user' user.id %}" 
+                                                   onclick="return confirm('Вы уверены, что хотите деактивировать пользователя?')">
+                                                    <i class="bi bi-person-x"></i> Деактивировать
+                                                </a>
+                                            {% else %}
+                                                <a class="dropdown-item text-success" href="{% url 'activate_user' user.id %}"
+                                                   onclick="return confirm('Вы уверены, что хотите активировать пользователя?')">
+                                                    <i class="bi bi-person-check"></i> Активировать
+                                                </a>
+                                            {% endif %}
+                                        </li>
+                                        {% if not user.is_superuser %}
+                                        <li>
+                                            <a class="dropdown-item text-danger" href="{% url 'delete_user' user.id %}" 
+                                               onclick="return confirm('Вы уверены, что хотите удалить пользователя? Это действие нельзя отменить!')">
+                                                <i class="bi bi-trash"></i> Удалить
+                                            </a>
+                                        </li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- Модальное окно редактирования пользователя -->
+                        <div class="modal fade" id="editUserModal{{ user.id }}" tabindex="-1">
+                            <div class="modal-dialog modal-lg">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Редактирование пользователя: {{ user.username }}</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <form method="post" action="{% url 'edit_user' user.id %}">
+                                        {% csrf_token %}
+                                        <div class="modal-body">
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">Имя пользователя</label>
+                                                    <input type="text" class="form-control" value="{{ user.username }}" readonly>
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">Email</label>
+                                                    <input type="email" name="email" class="form-control" 
+                                                           value="{{ user.email|default:'' }}">
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">ФИО</label>
+                                                    <input type="text" name="full_name" class="form-control" 
+                                                           value="{% if user.parent_profile %}{{ user.parent_profile.parent_fio }}{% elif user.teacher_profile %}{{ user.teacher_profile.teacher_fio }}{% endif %}">
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">Телефон</label>
+                                                    <input type="text" name="phone" class="form-control" 
+                                                           value="{% if user.parent_profile %}{{ user.parent_profile.parent_number }}{% elif user.teacher_profile %}{{ user.teacher_profile.teacher_number }}{% endif %}">
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label class="form-label">Роли</label>
+                                                <div>
+                                                    {% for group in all_groups %}
+                                                    <div class="form-check form-check-inline">
+                                                        <input class="form-check-input" type="checkbox" 
+                                                               name="groups" value="{{ group.id }}" 
+                                                               id="group{{ user.id }}_{{ group.id }}"
+                                                               {% if group in user.groups.all %}checked{% endif %}>
+                                                        <label class="form-check-label" for="group{{ user.id }}_{{ group.id }}">
+                                                            {{ group.name }}
+                                                        </label>
+                                                    </div>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" 
+                                                            name="is_active" id="is_active{{ user.id }}" 
+                                                            {% if user.is_active %}checked{% endif %}>
+                                                        <label class="form-check-label" for="is_active{{ user.id }}">
+                                                            Активный
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    {% if not user.is_superuser and user.groups.all.0.name != 'Родители' %}
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" 
+                                                            name="is_staff" id="is_staff{{ user.id }}" 
+                                                            {% if user.is_staff %}checked{% endif %}>
+                                                        <label class="form-check-label" for="is_staff{{ user.id }}">
+                                                            Персонал (доступ в админ-панель)
+                                                        </label>
+                                                    </div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                                            <button type="submit" class="btn btn-primary">Сохранить</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Модальное окно смены пароля -->
+                        <div class="modal fade" id="changePasswordModal{{ user.id }}" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Смена пароля для: {{ user.username }}</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <form method="post" action="{% url 'change_user_password' user.id %}">
+                                        {% csrf_token %}
+                                        <div class="modal-body">
+                                            <div class="mb-3">
+                                                <label class="form-label">Новый пароль</label>
+                                                <input type="password" name="new_password1" class="form-control" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Подтверждение пароля</label>
+                                                <input type="password" name="new_password2" class="form-control" required>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                                            <button type="submit" class="btn btn-primary">Сменить пароль</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center text-muted py-4">
+                                <i class="bi bi-people display-4"></i>
+                                <h5 class="mt-3">Пользователи не найдены</h5>
+                                <p>Создайте первого пользователя с помощью кнопки выше</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Пагинация -->
+            {% if users.has_other_pages %}
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    {% if users.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.role %}&role={{ request.GET.role }}{% endif %}">Первая</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ users.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.role %}&role={{ request.GET.role }}{% endif %}">Назад</a>
+                    </li>
+                    {% endif %}
+
+                    {% for i in users.paginator.page_range %}
+                        {% if users.number == i %}
+                        <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+                        {% elif i > users.number|add:'-3' and i < users.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ i }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.role %}&role={{ request.GET.role }}{% endif %}">{{ i }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if users.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ users.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.role %}&role={{ request.GET.role }}{% endif %}">Вперед</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ users.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.role %}&role={{ request.GET.role }}{% endif %}">Последняя</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Автоматическое закрытие модальных окон после сохранения
+    const editForms = document.querySelectorAll('form[action*="edit_user"], form[action*="change_user_password"]');
+    editForms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            const formData = new FormData(this);
+            fetch(this.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            }).then(response => {
+                if (response.ok) {
+                    location.reload();
+                }
+            });
+            e.preventDefault();
+        });
+    });
+
+    // Подсветка строк при наведении
+    const tableRows = document.querySelectorAll('table tbody tr');
+    tableRows.forEach(row => {
+        row.addEventListener('mouseenter', function() {
+            this.style.backgroundColor = '#f8f9fa';
+        });
+        row.addEventListener('mouseleave', function() {
+            this.style.backgroundColor = '';
+        });
+    });
+});
+// Динамическое управление чекбоксами при редактировании пользователя
+document.addEventListener('DOMContentLoaded', function() {
+    // Для каждой модалки редактирования
+    const editModals = document.querySelectorAll('div[id^="editUserModal"]');
+    
+    editModals.forEach(modal => {
+        const userId = modal.id.replace('editUserModal', '');
+        const form = modal.querySelector('form');
+        const groupCheckboxes = form.querySelectorAll('input[name="groups"]');
+        const isStaffCheckbox = form.querySelector('input[name="is_staff"]');
+        
+        // Если есть чекбокс "Персонал"
+        if (isStaffCheckbox) {
+            // Функция для обновления состояния чекбокса "Персонал"
+            function updateStaffCheckbox() {
+                const isParentSelected = Array.from(groupCheckboxes).some(cb => 
+                    cb.checked && cb.nextElementSibling.textContent.includes('Родители')
+                );
+                
+                if (isParentSelected) {
+                    // Родитель не может быть персоналом
+                    isStaffCheckbox.checked = false;
+                    isStaffCheckbox.disabled = true;
+                    isStaffCheckbox.parentElement.style.opacity = '0.5';
+                } else {
+                    // Другие роли могут быть персоналом
+                    isStaffCheckbox.disabled = false;
+                    isStaffCheckbox.parentElement.style.opacity = '1';
+                }
+            }
+            
+            // Проверяем при загрузке
+            updateStaffCheckbox();
+            
+            // И при каждом изменении группы
+            groupCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    // Проверяем конфликты ролей
+                    const selectedGroups = Array.from(groupCheckboxes)
+                        .filter(cb => cb.checked)
+                        .map(cb => cb.nextElementSibling.textContent.trim());
+                    
+                    const hasParent = selectedGroups.includes('Родители');
+                    const hasTeacher = selectedGroups.includes('Воспитатели');
+                    const hasDirector = selectedGroups.includes('Заведующие');
+                    
+                    // Нельзя выбрать родителя вместе с воспитателем или заведующим
+                    if (hasParent && (hasTeacher || hasDirector)) {
+                        alert('Ошибка: Пользователь не может быть одновременно родителем и воспитателем/заведующим!');
+                        this.checked = false;
+                        return;
+                    }
+                    
+                    // Нельзя выбрать воспитателя вместе с заведующим
+                    if (hasTeacher && hasDirector) {
+                        alert('Ошибка: Пользователь не может быть одновременно воспитателем и заведующим!');
+                        this.checked = false;
+                        return;
+                    }
+                    
+                    updateStaffCheckbox();
+                });
+            });
+        }
+    });
+    
+    // Предотвращаем выбор конфликтующих ролей при создании пользователя
+    const roleRadios = document.querySelectorAll('input[name="role"]');
+    if (roleRadios.length > 0) {
+        roleRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                // Можно оставить пустым или добавить дополнительную логику
+            });
+        });
+    }
+});
+</script>
+
+<style>
+.badge {
+    font-size: 0.75em;
+    padding: 0.35em 0.65em;
+}
+
+.table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.role-card {
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.role-card:hover {
+    transform: translateY(-2px);
+}
+
+.page-link {
+    color: #0d6efd;
+}
+
+.page-item.active .page-link {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+</style>
+{% endblock %}
