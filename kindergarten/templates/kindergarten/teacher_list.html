@@ -3,44 +3,171 @@
 {% block title %}Список воспитателей{% endblock %}
 
 {% block content %}
-<h1>Список воспитателей</h1>
-<div class="action-buttons mb-4">
-    <a href="{% url 'parent_create' %}" class="btn btn-success">
-        <i class="bi bi-person-plus"></i> Добавить воспитателя
-    </a>
+<div class="container-fluid">
+    <h1><i class="bi bi-person-badge-fill"></i> Список воспитателей</h1>
+    
+    {% if user.groups.all.0.name == 'Заведующие' or user.is_superuser %}
+    <div class="mb-4">
+        <a href="{% url 'teacher_create' %}" class="btn btn-primary">
+            <i class="bi bi-person-plus"></i> Добавить воспитателя
+        </a>
+    </div>
+    {% endif %}
+
+    <!-- Фильтры и поиск -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-5">
+                    <label for="search" class="form-label">Поиск по ФИО</label>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           value="{{ request.GET.search }}" placeholder="Введите ФИО воспитателя...">
+                </div>
+                
+                <div class="col-md-3">
+                    <label for="position" class="form-label">Должность</label>
+                    <select class="form-select" id="position" name="position">
+                        <option value="">Все должности</option>
+                        <option value="Младший воспитатель" {% if request.GET.position == 'Младший воспитатель' %}selected{% endif %}>Младший воспитатель</option>
+                        <option value="Воспитатель" {% if request.GET.position == 'Воспитатель' %}selected{% endif %}>Воспитатель</option>
+                        <option value="Старший воспитатель" {% if request.GET.position == 'Старший воспитатель' %}selected{% endif %}>Старший воспитатель</option>
+                        <option value="Заведующий" {% if request.GET.position == 'Заведующий' %}selected{% endif %}>Заведующий</option>
+                        <option value="Методист" {% if request.GET.position == 'Методист' %}selected{% endif %}>Методист</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-2">
+                    <label for="group" class="form-label">Группа</label>
+                    <select class="form-select" id="group" name="group">
+                        <option value="">Все группы</option>
+                        {% for group in groups %}
+                        <option value="{{ group.pk }}" {% if request.GET.group == group.pk|stringformat:"s" %}selected{% endif %}>
+                            {{ group.group_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> Поиск
+                    </button>
+                </div>
+            </form>
+            
+            {% if request.GET.search or request.GET.position or request.GET.group %}
+            <div class="mt-3">
+                <small class="text-muted">
+                    Найдено: {{ teachers.paginator.count }} воспитателей
+                    {% if request.GET.search %}
+                    | Поиск: "{{ request.GET.search }}"
+                    {% endif %}
+                    {% if request.GET.position %}
+                    | Должность: {{ request.GET.position }}
+                    {% endif %}
+                    <a href="{% url 'teacher_list' %}" class="ms-2">
+                        <i class="bi bi-x-circle"></i> Сбросить фильтры
+                    </a>
+                </small>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Таблица воспитателей -->
+    <div class="card">
+        <div class="card-body">
+            {% if teachers %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>ФИО</th>
+                            <th>Должность</th>
+                            <th>Телефон</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for teacher in teachers %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'teacher_detail' teacher.pk %}" class="text-decoration-none">
+                                    <strong>{{ teacher.teacher_fio }}</strong>
+                                </a>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ teacher.teacher_position }}</span>
+                            </td>
+                            <td>{{ teacher.teacher_number }}</td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    {% if user.groups.all.0.name == 'Заведующие' or user.is_superuser %}
+                                    <a href="{% url 'teacher_edit' teacher.pk %}" class="btn btn-warning" title="Редактировать">
+                                        Редактировать
+                                    </a>
+                                    <a href="{% url 'teacher_delete' teacher.pk %}" class="btn btn-danger" title="Удалить">
+                                        Удалить
+                                    </a>
+                                    {% endif %}
+                                </div>  
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Пагинация -->
+            {% if teachers.has_other_pages %}
+            <nav aria-label="Навигация по страницам" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if teachers.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.position %}&position={{ request.GET.position }}{% endif %}{% if request.GET.group %}&group={{ request.GET.group }}{% endif %}">Первая</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ teachers.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.position %}&position={{ request.GET.position }}{% endif %}{% if request.GET.group %}&group={{ request.GET.group }}{% endif %}">Назад</a>
+                    </li>
+                    {% endif %}
+
+                    {% for i in teachers.paginator.page_range %}
+                        {% if teachers.number == i %}
+                        <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+                        {% elif i > teachers.number|add:'-3' and i < teachers.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ i }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.position %}&position={{ request.GET.position }}{% endif %}{% if request.GET.group %}&group={{ request.GET.group }}{% endif %}">{{ i }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if teachers.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ teachers.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.position %}&position={{ request.GET.position }}{% endif %}{% if request.GET.group %}&group={{ request.GET.group }}{% endif %}">Вперед</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ teachers.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.position %}&position={{ request.GET.position }}{% endif %}{% if request.GET.group %}&group={{ request.GET.group }}{% endif %}">Последняя</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <div class="alert alert-info text-center">
+                <i class="bi bi-info-circle fs-1"></i>
+                <h4 class="mt-3">Нет данных</h4>
+                <p>В базе данных нет воспитателей.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
 </div>
-{% if teachers %}
-<div class="table-responsive">
-    <table class="table table-striped table-hover">
-        <thead class="table-dark">
-            <tr>
-                <th>ФИО</th>
-                <th>Должность</th>
-                <th>Телефон</th>
-                <th>Действие</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for teacher in teachers %}
-            <tr>
-                <td><a href="{% url 'teacher_detail' teacher.pk %}">{{ teacher.teacher_fio }}</a></td>
-                <td>{{ teacher.teacher_position }}</td>
-                <td>{{ teacher.teacher_number }}</td>
-                <td>
-                    <div class="btn-group" role="group">
-                        <a href="{% url 'teacher_edit' teacher.pk %}" class="btn btn-warning">Редактировать</a>
-                        <a href="{% url 'teacher_delete' teacher.pk %}" class="btn btn-danger">Удалить</a>
-                    </div>  
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-{% else %}
-<div class="alert alert-info">
-    <h4>Нет данных</h4>
-    <p>В базе данных нет воспитателей.</p>
-</div>
-{% endif %}
+
+<style>
+.badge {
+    font-size: 0.85rem;
+    padding: 0.35em 0.65em;
+}
+</style>
 {% endblock %}

@@ -1,7 +1,7 @@
 from django import forms
 from django.core.exceptions import ValidationError
 from datetime import date
-from .models import Student, Teacher, Group, Parent, Attendance, StudentParent, Event
+from .models import Student, Teacher, Group, Parent, Attendance, StudentParent
 
 class StudentForm(forms.ModelForm):
     class Meta:
@@ -101,18 +101,6 @@ class AttendanceForm(forms.ModelForm):
             'noted_by': forms.Select(attrs={'class': 'form-control'}),
         }
 
-class EventForm(forms.ModelForm):
-    class Meta:
-        model = Event
-        fields = '__all__'
-        widgets = {
-            'event_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'event_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
-            'event_title': forms.TextInput(attrs={'class': 'form-control'}),
-            'event_description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'event_type': forms.Select(attrs={'class': 'form-control'}),
-            'groups': forms.SelectMultiple(attrs={'class': 'form-control'}),
-        }
 
 class AddChildToParentForm(forms.Form):
     parent = forms.ModelChoiceField(

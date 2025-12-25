@@ -30,11 +30,10 @@ def user_management(request):
     
     # Применяем фильтры
     if search_query:
+        # TODO: Поиск по parent_profile/teacher_profile отключен (нет связи в БД)
         users = users.filter(
             Q(username__icontains=search_query) |
-            Q(email__icontains=search_query) |
-            Q(parent_profile__parent_fio__icontains=search_query) |
-            Q(teacher_profile__teacher_fio__icontains=search_query)
+            Q(email__icontains=search_query)
         )
     
     if role_filter:
@@ -99,13 +98,8 @@ def create_user(request):
                 user.is_staff = True  # Воспитатель - персонал
                 user.save()
                 
-                # Создаем профиль воспитателя
-                Teacher.objects.create(
-                    user=user,
-                    teacher_fio=full_name,
-                    teacher_position='Воспитатель',
-                    teacher_number=phone
-                )
+                # TODO: Создание профиля воспитателя отключено (нет связи в БД)
+                pass
                 messages.success(request, f'Воспитатель {full_name} успешно создан!')
                 
             elif role == 'director':
@@ -114,13 +108,8 @@ def create_user(request):
                 user.is_staff = True  # Заведующий - персонал
                 user.save()
                 
-                # Создаем профиль воспитателя для заведующего
-                Teacher.objects.create(
-                    user=user,
-                    teacher_fio=full_name,
-                    teacher_position='Заведующий',
-                    teacher_number=phone
-                )
+                # TODO: Создание профиля заведующего отключено (нет связи в БД)
+                pass
                 messages.success(request, f'Заведующий {full_name} успешно создан!')
                 
             elif role == 'superuser':
@@ -136,11 +125,8 @@ def create_user(request):
                 user.is_staff = False  # Родитель НЕ персонал
                 user.save()
                 
-                Parent.objects.create(
-                    user=user,
-                    parent_fio=full_name,
-                    parent_number=phone
-                )
+                # TODO: Создание профиля родителя отключено (нет связи в БД)
+                pass
                 messages.success(request, f'Родитель {full_name} успешно создан!')
             
             return redirect('user_management')
@@ -202,43 +188,11 @@ def edit_user(request, user_id):
             full_name = request.POST.get('full_name', '')
             phone = request.POST.get('phone', '')
             
-            # Удаляем старые профили если изменилась роль
-            current_groups = set(user.groups.values_list('name', flat=True))
+            # TODO: Управление профилями отключено (нет связи user-teacher/parent в БД)
+            # Старая логика удаления профилей закомментирована
             
-            # Если пользователь больше не родитель, удаляем профиль родителя
-            if 'Родители' not in current_groups and hasattr(user, 'parent_profile'):
-                user.parent_profile.delete()
-            
-            # Если пользователь больше не воспитатель/заведующий, удаляем профиль учителя
-            if not any(role in current_groups for role in ['Воспитатели', 'Заведующие']) and hasattr(user, 'teacher_profile'):
-                user.teacher_profile.delete()
-            
-            # Создаем новый профиль если нужно
-            if 'Родители' in current_groups:
-                parent, created = Parent.objects.get_or_create(
-                    user=user,
-                    defaults={'parent_fio': full_name, 'parent_number': phone}
-                )
-                if not created:
-                    parent.parent_fio = full_name
-                    parent.parent_number = phone
-                    parent.save()
-            
-            elif any(role in current_groups for role in ['Воспитатели', 'Заведующие']):
-                position = 'Заведующий' if 'Заведующие' in current_groups else 'Воспитатель'
-                teacher, created = Teacher.objects.get_or_create(
-                    user=user,
-                    defaults={
-                        'teacher_fio': full_name, 
-                        'teacher_number': phone,
-                        'teacher_position': position
-                    }
-                )
-                if not created:
-                    teacher.teacher_fio = full_name
-                    teacher.teacher_number = phone
-                    teacher.teacher_position = position
-                    teacher.save()
+            # TODO: Создание профилей отключено (нет связи user-teacher/parent в БД)
+            # Старая логика создания профилей закомментирована
             
             messages.success(request, f'Пользователь {user.username} успешно обновлен!')
             

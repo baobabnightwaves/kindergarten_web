@@ -11,9 +11,10 @@ from django.http import HttpResponse, JsonResponse
 from django.urls import reverse
 
 # Импорты моделей - без дублирования
-from .models import Student, Teacher, Group, Parent, Attendance, StudentParent, Event
-from .forms import StudentForm, TeacherForm, GroupForm, ParentForm, AttendanceForm, StudentParentForm, EventForm
+from .models import Student, Teacher, Group, Parent, Attendance, StudentParent
+from .forms import StudentForm, TeacherForm, GroupForm, ParentForm, AttendanceForm, StudentParentForm
 from .forms import AddChildToParentForm, AddParentToChildForm
+from .decorators import get_user_role, role_required
 
 # Функции проверки прав
 def is_director_or_superuser(user):
@@ -31,6 +32,20 @@ def is_teacher_director_or_superuser(user):
 def is_superuser(user):
     """Проверка, является ли пользователь суперпользователем"""
     return user.is_superuser
+
+def get_teacher_groups(user):
+    """Получить группы воспитателя по связи через Teacher модель"""
+    if hasattr(user, 'teacher_profile'):
+        teacher = user.teacher_profile
+        return Group.objects.filter(teacher=teacher)
+    return Group.objects.none()
+
+def get_parent_children(user):
+    """Получить детей родителя по связи через Parent модель"""
+    if hasattr(user, 'parent_profile'):
+        parent = user.parent_profile
+        return Student.objects.filter(studentparent__parent=parent).distinct()
+    return Student.objects.none()
 
 # ========== ГЛАВНАЯ СТРАНИЦА ==========
 def home(request):
@@ -61,17 +76,24 @@ def groups_context(request):
 
 # ========== УЧЕНИКИ ==========
 @login_required
-@user_passes_test(is_teacher_director_or_superuser, login_url='home')
 def student_list(request):
     """Список учеников с поиском и фильтрацией"""
-    students = Student.objects.all().select_related('group')
+    user_role = get_user_role(request.user)
     
-    # Применяем фильтры в зависимости от роли пользователя
-    if request.user.groups.filter(name='Воспитатели').exists() and hasattr(request.user, 'teacher_profile'):
-        # Для воспитателя - только его ученики
-        teacher = request.user.teacher_profile
-        teacher_groups = Group.objects.filter(teacher=teacher)  # Используем Group, не KindergartenGroup
-        students = students.filter(group__in=teacher_groups)
+    # Фильтруем учеников в зависимости от роли
+    if user_role == 'parent':
+        # Родитель видит только своих детей
+        students = get_parent_children(request.user).select_related('group')
+        groups = Group.objects.filter(student__in=students).distinct()
+    elif user_role == 'teacher':
+        # Воспитатель видит учеников из своих групп
+        teacher_groups = get_teacher_groups(request.user)
+        students = Student.objects.filter(group__in=teacher_groups).select_related('group')
+        groups = teacher_groups
+    else:
+        # Директор и суперпользователь видят всех
+        students = Student.objects.all().select_related('group')
+        groups = Group.objects.all()
     
     # Получаем параметры фильтрации
     search_query = request.GET.get('search', '')
@@ -94,17 +116,6 @@ def student_list(request):
         students = students.filter(student_date_out__isnull=True)
     elif status_filter == 'graduated':
         students = students.filter(student_date_out__isnull=False)
-    
-    # Получаем доступные группы для фильтра
-    if request.user.groups.filter(name='Воспитатели').exists() and hasattr(request.user, 'teacher_profile'):
-        # Для воспитателя - только его группы
-        teacher = request.user.teacher_profile
-        groups = Group.objects.filter(teacher=teacher)
-    elif request.user.groups.filter(name='Заведующие').exists() or request.user.is_superuser:
-        # Для заведующих и суперпользователей - все группы
-        groups = Group.objects.all()
-    else:
-        groups = Group.objects.none()
     
     # Сортировка и пагинация
     students = students.order_by('student_fio')
@@ -190,9 +201,43 @@ def student_delete(request, pk):
 
 # ========== ВОСПИТАТЕЛИ ==========
 @login_required
+@role_required('teacher', 'director')
 def teacher_list(request):
-    teachers = Teacher.objects.all()
-    return render(request, 'kindergarten/teacher_list.html', {'teachers': teachers})
+    """Список воспитателей с поиском и фильтрацией"""
+    teachers = Teacher.objects.all().select_related('user').prefetch_related('group_set')
+    
+    # Получаем параметры фильтрации
+    search_query = request.GET.get('search', '')
+    position_filter = request.GET.get('position', '')
+    group_filter = request.GET.get('group', '')
+    
+    # Применяем поиск по ФИО
+    if search_query:
+        teachers = teachers.filter(teacher_fio__icontains=search_query)
+    
+    # Применяем фильтр по должности
+    if position_filter:
+        teachers = teachers.filter(teacher_position=position_filter)
+    
+    # Применяем фильтр по группе
+    if group_filter:
+        teachers = teachers.filter(group__pk=group_filter)
+    
+    # Сортировка
+    teachers = teachers.order_by('teacher_fio')
+    
+    # Пагинация - 25 элементов на страницу (как у учеников)
+    paginator = Paginator(teachers, 25)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Получаем все группы для фильтра
+    groups = Group.objects.all()
+    
+    return render(request, 'kindergarten/teacher_list.html', {
+        'teachers': page_obj,
+        'groups': groups,
+    })
 
 @login_required
 def teacher_detail(request, pk):
@@ -244,38 +289,62 @@ def teacher_delete(request, pk):
 
 # ========== ГРУППЫ ==========
 @login_required
-@user_passes_test(is_teacher_director_or_superuser, login_url='home')
+@role_required('teacher', 'director')
 def group_list(request):
-    """Список групп с информацией о наполняемости"""
-    # Для воспитателей показываем только их группы
-    if request.user.groups.filter(name='Воспитатели').exists() and hasattr(request.user, 'teacher_profile'):
-        teacher = request.user.teacher_profile
-        groups = Group.objects.filter(teacher=teacher).select_related('teacher')
-    # Для заведующих и суперпользователей показываем все группы
-    elif request.user.groups.filter(name='Заведующие').exists() or request.user.is_superuser:
-        groups = Group.objects.all().select_related('teacher')
-    else:
-        # Для родителей показываем только группу их ребенка
-        if hasattr(request.user, 'parent_profile'):
-            parent = request.user.parent_profile
-            # Получаем группы детей родителя
-            child_groups = set()
-            for relation in parent.studentparent_set.all():
-                if relation.student.group:
-                    child_groups.add(relation.student.group.pk)
-            groups = Group.objects.filter(pk__in=child_groups).select_related('teacher')
-        else:
-            groups = Group.objects.none()
+    """Список групп с информацией о наполняемости и фильтрацией"""
+    user_role = get_user_role(request.user)
     
-    # Добавляем статистику для каждой группы
-    for group in groups:
+    # Фильтруем группы в зависимости от роли
+    if user_role == 'teacher':
+        # Воспитатель видит только свои группы
+        groups = get_teacher_groups(request.user).select_related('teacher')
+    else:
+        # Директор и суперпользователь видят все группы
+        groups = Group.objects.all().select_related('teacher')
+    
+    # Получаем параметры фильтрации
+    search_query = request.GET.get('search', '')
+    category_filter = request.GET.get('category', '')
+    year_filter = request.GET.get('year', '')
+    teacher_filter = request.GET.get('teacher', '')
+    
+    # Применяем поиск по названию
+    if search_query:
+        groups = groups.filter(group_name__icontains=search_query)
+    
+    # Применяем фильтр по категории
+    if category_filter:
+        groups = groups.filter(group_category=category_filter)
+    
+    # Применяем фильтр по году обучения
+    if year_filter:
+        groups = groups.filter(group_year=year_filter)
+    
+    # Применяем фильтр по воспитателю
+    if teacher_filter:
+        groups = groups.filter(teacher_id=teacher_filter)
+    
+    # Сортировка
+    groups = groups.order_by('group_name')
+    
+    # Пагинация - 9 элементов на страницу
+    paginator = Paginator(list(groups), 9)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Добавляем статистику для каждой группы на текущей странице
+    for group in page_obj:
         group.current_count = group.current_students_count()
         group.available = group.available_places()
         group.is_full_flag = group.is_full()
     
+    # Получаем всех воспитателей для фильтра
+    teachers = Teacher.objects.all().order_by('teacher_fio')
+    
     return render(request, 'kindergarten/group_list.html', {
-        'groups': groups,
+        'groups': page_obj,
         'max_capacity': Group.MAX_STUDENTS,
+        'teachers': teachers,
     })
 
 @login_required
@@ -342,23 +411,47 @@ def group_delete(request, pk):
 
 # ========== РОДИТЕЛИ ==========
 @login_required
-@user_passes_test(is_teacher_director_or_superuser, login_url='home')
+@role_required('teacher', 'director')
 def parent_list(request):
-    """Список родителей"""
-    parents = Parent.objects.all()
+    """Список родителей с фильтрацией и поиском"""
+    user_role = get_user_role(request.user)
     
-    # Если пользователь - воспитатель, показываем только родителей его учеников
-    if request.user.groups.filter(name='Воспитатели').exists() and hasattr(request.user, 'teacher_profile'):
-        teacher = request.user.teacher_profile
-        teacher_groups = Group.objects.filter(teacher=teacher)
-        # Получаем учеников из групп воспитателя
-        teacher_students = Student.objects.filter(group__in=teacher_groups)
-        # Получаем ID родителей этих учеников
-        parent_ids = StudentParent.objects.filter(student__in=teacher_students).values_list('parent_id', flat=True)
-        parents = parents.filter(pk__in=parent_ids)
+    # Фильтруем родителей в зависимости от роли
+    if user_role == 'teacher':
+        # Воспитатель видит родителей учеников из своих групп
+        teacher_groups = get_teacher_groups(request.user)
+        students_in_groups = Student.objects.filter(group__in=teacher_groups)
+        parents = Parent.objects.filter(studentparent__student__in=students_in_groups).distinct()
+    else:
+        # Директор и суперпользователь видят всех родителей
+        parents = Parent.objects.all()
+    
+    # Поиск по имени
+    search_query = request.GET.get('search', '')
+    if search_query:
+        parents = parents.filter(parent_fio__icontains=search_query)
+    
+    # Фильтр по группе
+    group_filter = request.GET.get('group', '')
+    if group_filter:
+        students_in_group = Student.objects.filter(group_id=group_filter)
+        parents = parents.filter(studentparent__student__in=students_in_group).distinct()
+    
+    # Сортировка
+    parents = parents.order_by('parent_fio').prefetch_related('studentparent_set__student')
+    
+    # Пагинация - 25 элементов на страницу (как у учеников и воспитателей)
+    paginator = Paginator(parents, 25)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Получаем группы для фильтра
+    groups = get_teacher_groups(request.user) if user_role == 'teacher' else Group.objects.all()
     
     return render(request, 'kindergarten/parent_list.html', {
-        'parents': parents,
+        'parents': page_obj,
+        'groups': groups,
+        'search_query': search_query,
     })
 
 @login_required
@@ -495,9 +588,11 @@ def remove_parent_child_relation(request, relation_id):
 
 # ========== ПОСЕЩАЕМОСТЬ ==========
 @login_required
+@role_required('teacher', 'director')
 def attendance_list(request):
     """Журнал посещаемости с фильтрацией по группам воспитателя"""
     today = date.today()
+    user_role = get_user_role(request.user)
     
     date_filter = request.GET.get('date', today.strftime('%Y-%m-%d'))
     group_filter = request.GET.get('group', '')
@@ -508,30 +603,10 @@ def attendance_list(request):
         filter_date = today
     
     # Получаем доступные группы в зависимости от роли
-    if request.user.groups.filter(name='Воспитатели').exists() and hasattr(request.user, 'teacher_profile'):
-        # Для воспитателя - только его группы
-        teacher = request.user.teacher_profile
-        available_groups = Group.objects.filter(teacher=teacher)
-        
-        # Если выбрана группа, проверяем что она принадлежит воспитателю
-        if group_filter:
-            if not available_groups.filter(pk=group_filter).exists():
-                group_filter = ''
-                messages.warning(request, 'Выбранная группа не доступна')
-    elif request.user.groups.filter(name='Заведующие').exists() or request.user.is_superuser:
-        # Для заведующих и суперпользователей - все группы
-        available_groups = Group.objects.all()
+    if user_role == 'teacher':
+        available_groups = get_teacher_groups(request.user)
     else:
-        # Для родителей - только группа их ребенка
-        if hasattr(request.user, 'parent_profile'):
-            parent = request.user.parent_profile
-            child_groups = set()
-            for relation in parent.studentparent_set.all():
-                if relation.student.group:
-                    child_groups.add(relation.student.group.pk)
-            available_groups = Group.objects.filter(pk__in=child_groups)
-        else:
-            available_groups = Group.objects.none()
+        available_groups = Group.objects.all()
     
     attendance_query = Attendance.objects.filter(attendance_date=filter_date)
     
@@ -539,9 +614,8 @@ def attendance_list(request):
         attendance_query = attendance_query.filter(student__group_id=group_filter)
     else:
         # Если группа не выбрана, для воспитателя показываем учеников из всех его групп
-        if request.user.groups.filter(name='Воспитатели').exists():
-            teacher_groups = available_groups
-            attendance_query = attendance_query.filter(student__group__in=teacher_groups)
+        if user_role == 'teacher':
+            attendance_query = attendance_query.filter(student__group__in=available_groups)
     
     attendance = attendance_query.select_related('student', 'student__group')
     
@@ -553,11 +627,10 @@ def attendance_list(request):
         )
     else:
         # Если группа не выбрана, для воспитателя показываем всех учеников из его групп
-        if request.user.groups.filter(name='Воспитатели').exists():
-            teacher_groups = available_groups
+        if user_role == 'teacher':
             students = Student.objects.filter(
                 student_date_out__isnull=True,
-                group__in=teacher_groups
+                group__in=available_groups
             )
         else:
             students = Student.objects.filter(student_date_out__isnull=True)
@@ -599,9 +672,8 @@ def attendance_mark_bulk(request):
                 group_id=group_id
             )
             
+            # TODO: Связь user-teacher отключена (нет в БД)
             teacher = None
-            if request.user.is_authenticated and hasattr(request.user, 'teacher_profile'):
-                teacher = request.user.teacher_profile
             
             for student in students:
                 status_key = f'status_{student.student_id}'

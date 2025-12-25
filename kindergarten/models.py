@@ -14,17 +14,18 @@ class Teacher(models.Model):
     ]
     
     teacher_id = models.AutoField(primary_key=True)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True, 
+                                related_name='teacher_profile', verbose_name='Пользователь')
     teacher_fio = models.CharField(max_length=100, verbose_name='ФИО воспитателя', db_index=True)
     teacher_position = models.CharField(max_length=50, choices=POSITION_CHOICES, 
                                        default='Воспитатель', verbose_name='Должность', db_index=True)
     teacher_number = models.CharField(max_length=20, verbose_name='Номер телефона')
-    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True, 
-                               related_name='teacher_profile')
     
     def __str__(self):
         return f"{self.teacher_fio} ({self.teacher_position})"
     
     class Meta:
+        db_table = 'teachers'
         verbose_name = 'Воспитатель'
         verbose_name_plural = 'Воспитатели'
         indexes = [
@@ -71,6 +72,7 @@ class Group(models.Model):
         return f"{self.group_name} ({self.group_category})"
     
     class Meta:
+        db_table = 'groups'
         verbose_name = 'Группа'
         verbose_name_plural = 'Группы'
         indexes = [
@@ -118,6 +120,7 @@ class Student(models.Model):
         return f"{self.student_fio} ({self.age()} лет, {status})"
     
     class Meta:
+        db_table = 'students'
         verbose_name = 'Ученик'
         verbose_name_plural = 'Ученики'
         indexes = [
@@ -136,15 +139,16 @@ class Parent(models.Model):
     ]
     
     parent_id = models.AutoField(primary_key=True)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True, 
+                                related_name='parent_profile', verbose_name='Пользователь')
     parent_fio = models.CharField(max_length=100, verbose_name='ФИО родителя', db_index=True)
     parent_number = models.CharField(max_length=20, verbose_name='Номер телефона', db_index=True)
-    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True, 
-                               related_name='parent_profile')
     
     def __str__(self):
         return self.parent_fio
     
     class Meta:
+        db_table = 'parents'
         verbose_name = 'Родитель'
         verbose_name_plural = 'Родители'
         indexes = [
@@ -162,14 +166,15 @@ class StudentParent(models.Model):
         return f"{self.parent.parent_fio} - {self.relationship_type} - {self.student.student_fio}"
     
     class Meta:
+        db_table = 'student_parents'
         verbose_name = 'Связь ученик-родитель'
         verbose_name_plural = 'Связи ученик-родитель'
         unique_together = ('student', 'parent')
 
 class Attendance(models.Model):
-    attendance_id = models.AutoField(primary_key=True)
-    attendance_date = models.DateField(verbose_name='Дата посещения', db_index=True)
-    status = models.BooleanField(verbose_name='Статус', choices=[(True, 'Присутствовал'), (False, 'Отсутствовал')], db_index=True)
+    attendance_id = models.AutoField(primary_key=True, db_column='atd_id')
+    attendance_date = models.DateField(verbose_name='Дата посещения', db_index=True, db_column='atd_date')
+    status = models.BooleanField(verbose_name='Статус', choices=[(True, 'Присутствовал'), (False, 'Отсутствовал')], db_index=True, db_column='atd_status')
     student = models.ForeignKey(Student, on_delete=models.CASCADE, verbose_name='Ученик')
     reason = models.CharField(max_length=100, verbose_name='Причина отсутствия', blank=True, 
                              choices=[
@@ -187,6 +192,7 @@ class Attendance(models.Model):
         return f"{self.student.student_fio} - {self.attendance_date} - {status_text}"
     
     class Meta:
+        db_table = 'attendance'
         verbose_name = 'Посещаемость'
         verbose_name_plural = 'Посещаемость'
         unique_together = ('attendance_date', 'student')  # Одна запись на день для ученика
@@ -196,29 +202,3 @@ class Attendance(models.Model):
             models.Index(fields=['student', 'status', 'attendance_date']),  # For student status queries
         ]
 
-class Event(models.Model):
-    EVENT_TYPES = [
-        ('holiday', 'Праздник'),
-        ('meeting', 'Родительское собрание'),
-        ('excursion', 'Экскурсия'),
-        ('medical', 'Медосмотр'),
-        ('other', 'Другое'),
-    ]
-    
-    event_id = models.AutoField(primary_key=True)
-    event_title = models.CharField(max_length=200, verbose_name='Название события')
-    event_description = models.TextField(verbose_name='Описание', blank=True)
-    event_date = models.DateField(verbose_name='Дата события')
-    event_time = models.TimeField(verbose_name='Время', blank=True, null=True)
-    event_type = models.CharField(max_length=20, choices=EVENT_TYPES, default='other', 
-                                 verbose_name='Тип события')
-    groups = models.ManyToManyField(Group, blank=True, verbose_name='Группы')
-    created_at = models.DateTimeField(auto_now_add=True)
-    
-    def __str__(self):
-        return f"{self.event_title} - {self.event_date}"
-    
-    class Meta:
-        verbose_name = 'Событие'
-        verbose_name_plural = 'События'
-        ordering = ['event_date']

@@ -28,7 +28,7 @@ def get_report_data_threaded(user, report_type, filters=None):
 
 def generate_report_data(user, report_type, filters):
     """Генерация данных для отчета"""
-    from .models import Student, Teacher, Group, Parent, Attendance, StudentParent, Event
+    from .models import Student, Teacher, Group, Parent, Attendance, StudentParent
     
     try:
         # Определяем, какие данные доступны пользователю

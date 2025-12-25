@@ -5,15 +5,15 @@
 
 {% block content %}
 <div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1><i class="bi bi-people-fill"></i> Список учеников</h1>
-        
-        {% if user.groups.all.0.name == 'Заведующие' or user.is_superuser %}
+    <h1><i class="bi bi-people-fill"></i> Список учеников</h1>
+    
+    {% if user.groups.all.0.name == 'Заведующие' or user.is_superuser %}
+    <div class="mb-4">
         <a href="{% url 'student_create' %}" class="btn btn-primary">
             <i class="bi bi-person-plus"></i> Добавить ученика
         </a>
-        {% endif %}
     </div>
+    {% endif %}
 
     <!-- Фильтры и поиск -->
     <div class="card mb-4">
@@ -118,16 +118,12 @@
                             </td>
                             <td>
                                 <div class="btn-group" role="group">
-                                    <a href="{% url 'student_detail' student.pk %}" class="btn btn-sm btn-outline-primary">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
-                                    
                                     {% if user.groups.all.0.name == 'Заведующие' or user.is_superuser %}
-                                    <a href="{% url 'student_edit' student.pk %}" class="btn btn-sm btn-outline-warning">
-                                        <i class="bi bi-pencil"></i>
+                                    <a href="{% url 'student_edit' student.pk %}" class="btn btn-sm btn-warning">
+                                        Редактировать
                                     </a>
-                                    <a href="{% url 'student_delete' student.pk %}" class="btn btn-sm btn-outline-danger">
-                                        <i class="bi bi-trash"></i>
+                                    <a href="{% url 'student_delete' student.pk %}" class="btn btn-sm btn-danger">
+                                        Удалить
                                     </a>
                                     {% endif %}
                                 </div>

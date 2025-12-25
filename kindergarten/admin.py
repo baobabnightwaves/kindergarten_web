@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Student, Teacher, Group, Parent, Attendance, StudentParent, Event
+from .models import Student, Teacher, Group, Parent, Attendance, StudentParent
 
 @admin.register(Student)
 class StudentAdmin(admin.ModelAdmin):
@@ -39,9 +39,3 @@ class StudentParentAdmin(admin.ModelAdmin):
     list_filter = ('relationship_type', 'is_primary')
     search_fields = ('student__student_fio', 'parent__parent_fio')
 
-@admin.register(Event)
-class EventAdmin(admin.ModelAdmin):
-    list_display = ('event_title', 'event_date', 'event_type')
-    list_filter = ('event_type', 'event_date')
-    date_hierarchy = 'event_date'
-    filter_horizontal = ('groups',)

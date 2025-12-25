@@ -11,7 +11,7 @@ import csv
 import threading
 from io import StringIO
 
-from .models import Student, Teacher, Group, Parent, Attendance, StudentParent, Event
+from .models import Student, Teacher, Group, Parent, Attendance, StudentParent
 from .reports_utils import get_report_data_threaded, generate_report_data, create_chart
 
 def is_director_or_superuser(user):
