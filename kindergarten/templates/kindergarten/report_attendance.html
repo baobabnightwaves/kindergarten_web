@@ -108,14 +108,14 @@
 <div class="mt-4">
     {% if total > 0 %}
     <button onclick="window.print()" class="btn btn-primary me-2">
-        <i class="bi bi-printer"></i> Распечатать отчет
+        Распечатать отчет
     </button>
     <button onclick="exportToPDF()" class="btn btn-danger me-2">
-        <i class="bi bi-file-pdf"></i> Экспорт в PDF
+        Экспорт в PDF
     </button>
     {% endif %}
     <a href="{% url 'generate_report' 'students_csv' %}" class="btn btn-success">
-        <i class="bi bi-file-earmark-excel"></i> Экспорт учеников (CSV)
+        Экспорт учеников (CSV)
     </a>
 </div>
 {% endblock %}

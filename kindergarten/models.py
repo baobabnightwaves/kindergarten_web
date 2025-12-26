@@ -2,17 +2,12 @@ from django.db import models
 from django.core.exceptions import ValidationError
 from datetime import date
 from django.contrib.auth.models import User
-
-
 class Teacher(models.Model):
     POSITION_CHOICES = [
         ('Младший воспитатель', 'Младший воспитатель'),
         ('Воспитатель', 'Воспитатель'),
         ('Старший воспитатель', 'Старший воспитатель'),
-        ('Заведующий', 'Заведующий'),
-        ('Методист', 'Методист'),
     ]
-    
     teacher_id = models.AutoField(primary_key=True)
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True, 
                                 related_name='teacher_profile', verbose_name='Пользователь')
@@ -20,10 +15,8 @@ class Teacher(models.Model):
     teacher_position = models.CharField(max_length=50, choices=POSITION_CHOICES, 
                                        default='Воспитатель', verbose_name='Должность', db_index=True)
     teacher_number = models.CharField(max_length=20, verbose_name='Номер телефона')
-    
     def __str__(self):
         return f"{self.teacher_fio} ({self.teacher_position})"
-    
     class Meta:
         db_table = 'teachers'
         verbose_name = 'Воспитатель'
@@ -31,7 +24,6 @@ class Teacher(models.Model):
         indexes = [
             models.Index(fields=['teacher_fio', 'teacher_position']),
         ]
-
 class Group(models.Model):
     CATEGORY_CHOICES = [
         ('Младшая', 'Младшая (2-3 года)'),
@@ -39,9 +31,7 @@ class Group(models.Model):
         ('Старшая', 'Старшая (4-5 лет)'),
         ('Подготовительная', 'Подготовительная (5-7 лет)'),
     ]
-    
-    MAX_STUDENTS = 30  # Максимальная наполняемость группы
-    
+    MAX_STUDENTS = 30
     group_id = models.AutoField(primary_key=True)
     group_name = models.CharField(max_length=50, unique=True, verbose_name='Название группы', db_index=True)
     group_category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, 
@@ -53,24 +43,19 @@ class Group(models.Model):
                                   default='101')
     max_capacity = models.IntegerField(verbose_name='Максимальная наполняемость', 
                                       default=MAX_STUDENTS)
-    
     def current_students_count(self):
-        """Optimized to use cached count if available"""
+        if not self.pk:
+            return 0
         return self.student_set.count()
-    
     def available_places(self):
         return self.max_capacity - self.current_students_count()
-    
     def is_full(self):
         return self.current_students_count() >= self.max_capacity
-    
     def clean(self):
-        if self.current_students_count() > self.max_capacity:
+        if self.pk and self.current_students_count() > self.max_capacity:
             raise ValidationError(f'Группа не может содержать более {self.max_capacity} учеников')
-    
     def __str__(self):
         return f"{self.group_name} ({self.group_category})"
-    
     class Meta:
         db_table = 'groups'
         verbose_name = 'Группа'
@@ -79,7 +64,6 @@ class Group(models.Model):
             models.Index(fields=['group_category', 'group_year']),
             models.Index(fields=['teacher', 'group_year']),
         ]
-
 class Student(models.Model):
     student_id = models.AutoField(primary_key=True)
     student_fio = models.CharField(max_length=100, verbose_name='ФИО ученика', db_index=True)
@@ -91,43 +75,35 @@ class Student(models.Model):
     student_date_out = models.DateField(verbose_name='Дата выпуска', null=True, blank=True, db_index=True)
     group = models.ForeignKey(Group, on_delete=models.SET_NULL, null=True, 
                              verbose_name='Группа')
-    
     def age(self):
         today = date.today()
         born = self.student_birthday
         return today.year - born.year - ((today.month, today.day) < (born.month, born.day))
-    
     def is_active(self):
-        """Check if student is currently active"""
         return self.student_date_out is None or self.student_date_out > date.today()
-    
     def clean(self):    
         age_at_entry = self.age_at_entry()
         if age_at_entry < 2 or age_at_entry > 7:
             raise ValidationError('Прием детей в детский сад осуществляется только в возрасте от 2 до 7 лет')
         if self.group and self.group.is_full() and not self.pk:
             raise ValidationError(f'Группа "{self.group.group_name}" уже заполнена (максимум {self.group.max_capacity} учеников)')
-    
     def age_at_entry(self):
         if self.student_date_in and self.student_birthday:
             entry_date = self.student_date_in
             born = self.student_birthday
             return entry_date.year - born.year - ((entry_date.month, entry_date.day) < (born.month, born.day))
         return 0
-    
     def __str__(self):
         status = "Активен" if self.is_active() else "Выпущен"
         return f"{self.student_fio} ({self.age()} лет, {status})"
-    
     class Meta:
         db_table = 'students'
         verbose_name = 'Ученик'
         verbose_name_plural = 'Ученики'
         indexes = [
-            models.Index(fields=['group', 'student_date_out']),  # For active students in group
-            models.Index(fields=['student_fio', 'student_birthday']),  # For search queries
+            models.Index(fields=['group', 'student_date_out']),
+            models.Index(fields=['student_fio', 'student_birthday']),
         ]
-
 class Parent(models.Model):
     RELATIONSHIP_CHOICES = [
         ('Мать', 'Мать'),
@@ -137,16 +113,13 @@ class Parent(models.Model):
         ('Опекун', 'Опекун'),
         ('Другое', 'Другое'),
     ]
-    
     parent_id = models.AutoField(primary_key=True)
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True, 
                                 related_name='parent_profile', verbose_name='Пользователь')
     parent_fio = models.CharField(max_length=100, verbose_name='ФИО родителя', db_index=True)
     parent_number = models.CharField(max_length=20, verbose_name='Номер телефона', db_index=True)
-    
     def __str__(self):
         return self.parent_fio
-    
     class Meta:
         db_table = 'parents'
         verbose_name = 'Родитель'
@@ -154,23 +127,19 @@ class Parent(models.Model):
         indexes = [
             models.Index(fields=['parent_fio', 'parent_number']),
         ]
-
 class StudentParent(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE, verbose_name='Ученик')
     parent = models.ForeignKey(Parent, on_delete=models.CASCADE, verbose_name='Родитель')
     relationship_type = models.CharField(max_length=20, choices=Parent.RELATIONSHIP_CHOICES, 
                                         verbose_name='Степень родства')
     is_primary = models.BooleanField(default=True, verbose_name='Основной контакт')
-    
     def __str__(self):
         return f"{self.parent.parent_fio} - {self.relationship_type} - {self.student.student_fio}"
-    
     class Meta:
         db_table = 'student_parents'
         verbose_name = 'Связь ученик-родитель'
         verbose_name_plural = 'Связи ученик-родитель'
         unique_together = ('student', 'parent')
-
 class Attendance(models.Model):
     attendance_id = models.AutoField(primary_key=True, db_column='atd_id')
     attendance_date = models.DateField(verbose_name='Дата посещения', db_index=True, db_column='atd_date')
@@ -186,19 +155,16 @@ class Attendance(models.Model):
                              ])
     noted_by = models.ForeignKey(Teacher, on_delete=models.SET_NULL, null=True, 
                                 verbose_name='Отметил воспитатель')
-    
     def __str__(self):
         status_text = "Присутствовал" if self.status else "Отсутствовал"
         return f"{self.student.student_fio} - {self.attendance_date} - {status_text}"
-    
     class Meta:
         db_table = 'attendance'
         verbose_name = 'Посещаемость'
         verbose_name_plural = 'Посещаемость'
-        unique_together = ('attendance_date', 'student')  # Одна запись на день для ученика
+        unique_together = ('attendance_date', 'student')
         indexes = [
-            models.Index(fields=['student', 'attendance_date']),  # For student attendance history
-            models.Index(fields=['attendance_date', 'status']),  # For daily reports
-            models.Index(fields=['student', 'status', 'attendance_date']),  # For student status queries
+            models.Index(fields=['student', 'attendance_date']),
+            models.Index(fields=['attendance_date', 'status']),
+            models.Index(fields=['student', 'status', 'attendance_date']),
         ]
-

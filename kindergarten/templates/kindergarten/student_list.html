@@ -5,12 +5,12 @@
 
 {% block content %}
 <div class="container-fluid">
-    <h1><i class="bi bi-people-fill"></i> Список учеников</h1>
+    <h1>Список учеников</h1>
     
     {% if user.groups.all.0.name == 'Заведующие' or user.is_superuser %}
     <div class="mb-4">
         <a href="{% url 'student_create' %}" class="btn btn-primary">
-            <i class="bi bi-person-plus"></i> Добавить ученика
+            Добавить ученика
         </a>
     </div>
     {% endif %}
@@ -48,7 +48,7 @@
                 
                 <div class="col-md-2 d-flex align-items-end">
                     <button type="submit" class="btn btn-primary w-100">
-                        <i class="bi bi-search"></i> Поиск
+                        Поиск
                     </button>
                 </div>
             </form>
@@ -64,7 +64,7 @@
                     | Группа: {{ selected_group.group_name|default:"" }}
                     {% endif %}
                     <a href="{% url 'student_list' %}" class="ms-2">
-                        <i class="bi bi-x-circle"></i> Сбросить фильтры
+                        Сбросить фильтры
                     </a>
                 </small>
             </div>
@@ -87,7 +87,9 @@
                             <th>Группа</th>
                             <th>Дата поступления</th>
                             <th>Статус</th>
+                            {% if user.groups.all.0.name == 'Заведующие' or user.is_superuser %}
                             <th>Действия</th>
+                            {% endif %}
                         </tr>
                     </thead>
                     <tbody>
@@ -103,7 +105,9 @@
                             <td>{{ student.get_student_gender_display }}</td>
                             <td>
                                 {% if student.group %}
-                                <span class="badge bg-info">{{ student.group.group_name }}</span>
+                                <a href="{% url 'group_detail' student.group.pk %}" class="text-decoration-none">
+                                    <span class="badge bg-info">{{ student.group.group_name }}</span>
+                                </a>
                                 {% else %}
                                 <span class="badge bg-secondary">Не назначена</span>
                                 {% endif %}
@@ -116,18 +120,18 @@
                                 <span class="badge bg-warning">Выпущен</span>
                                 {% endif %}
                             </td>
+                            {% if user.groups.all.0.name == 'Заведующие' or user.is_superuser %}
                             <td>
                                 <div class="btn-group" role="group">
-                                    {% if user.groups.all.0.name == 'Заведующие' or user.is_superuser %}
                                     <a href="{% url 'student_edit' student.pk %}" class="btn btn-sm btn-warning">
                                         Редактировать
                                     </a>
                                     <a href="{% url 'student_delete' student.pk %}" class="btn btn-sm btn-danger">
                                         Удалить
                                     </a>
-                                    {% endif %}
                                 </div>
                             </td>
+                            {% endif %}
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -171,12 +175,11 @@
 
             {% else %}
             <div class="text-center text-muted py-5">
-                <i class="bi bi-people display-4"></i>
                 <h4 class="mt-3">Ученики не найдены</h4>
                 <p>Попробуйте изменить параметры поиска</p>
                 {% if user.groups.all.0.name == 'Заведующие' or user.is_superuser %}
                 <a href="{% url 'student_create' %}" class="btn btn-primary mt-2">
-                    <i class="bi bi-person-plus"></i> Добавить первого ученика
+                    Добавить первого ученика
                 </a>
                 {% endif %}
             </div>

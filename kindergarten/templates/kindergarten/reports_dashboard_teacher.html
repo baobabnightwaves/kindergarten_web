@@ -4,39 +4,18 @@
 
 {% block content %}
 <div class="container-fluid">
-    <h1 class="mb-4"><i class="bi bi-bar-chart"></i> Отчеты воспитателя</h1>
+    <h1 class="mb-4">Отчеты воспитателя</h1>
     
-    <!-- Статистика воспитателя -->
-    <div class="row mb-4">
-        <div class="col-md-4">
-            <div class="card text-white bg-primary">
-                <div class="card-body">
-                    <h5 class="card-title">Мои группы</h5>
-                    <h2>{{ groups_count }}</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card text-white bg-success">
-                <div class="card-body">
-                    <h5 class="card-title">Мои ученики</h5>
-                    <h2>{{ students_count }}</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card text-white bg-info">
-                <div class="card-body">
-                    <h5 class="card-title">Посещаемость (30 дней)</h5>
-                    <h2>
-                        {% if attendance_stats.present or attendance_stats.absent %}
-                            {{ attendance_stats.present|default:0 }} из {{ attendance_stats.present|default:0|add:attendance_stats.absent|default:0 }}
-                        {% else %}
-                            0
-                        {% endif %}
-                    </h2>
-                </div>
-            </div>
+    <!-- Новые отчеты -->
+    <div class="alert alert-success mb-4">
+        <h5><i class="fas fa-star"></i> Новые отчеты доступны!</h5>
+        <div class="d-flex gap-2">
+            <a href="{% url 'reports_selector' %}" class="btn btn-success btn-lg me-2">
+                <i class="fas fa-chart-bar"></i> Создать отчет
+            </a>
+            <a href="{% url 'teacher_students_report' %}" class="btn btn-outline-success me-2">
+                <i class="fas fa-users"></i> Список учеников с родителями
+            </a>
         </div>
     </div>
     
@@ -45,7 +24,7 @@
         <div class="col-md-12">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="bi bi-people"></i> Статистика по моим группам</h5>
+                    <h5 class="mb-0">Статистика по моим группам</h5>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -86,14 +65,13 @@
                                     <td>
                                         <a href="{% url 'generate_report' 'group_attendance' %}?group_id={{ group.id|default:'' }}" 
                                            class="btn btn-sm btn-outline-primary">
-                                            <i class="bi bi-download"></i> Отчет
+                                            Отчет
                                         </a>
                                     </td>
                                 </tr>
                                 {% empty %}
                                 <tr>
                                     <td colspan="6" class="text-center text-muted">
-                                        <i class="bi bi-people display-4"></i>
                                         <p class="mt-3">У вас нет групп</p>
                                     </td>
                                 </tr>
@@ -111,18 +89,17 @@
         <div class="col-md-12">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="bi bi-file-earmark-text"></i> Доступные отчеты</h5>
+                    <h5 class="mb-0">Доступные отчеты</h5>
                 </div>
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-4 mb-3">
                             <div class="card h-100">
                                 <div class="card-body text-center">
-                                    <i class="bi bi-calendar-check display-4 text-primary mb-3"></i>
                                     <h5>Посещаемость по группам</h5>
                                     <p class="text-muted small">Детальная посещаемость по вашим группам</p>
                                     <a href="{% url 'generate_report' 'group_attendance' %}" class="btn btn-primary">
-                                        <i class="bi bi-download"></i> Скачать
+                                        Скачать
                                     </a>
                                 </div>
                             </div>
@@ -131,11 +108,10 @@
                         <div class="col-md-4 mb-3">
                             <div class="card h-100">
                                 <div class="card-body text-center">
-                                    <i class="bi bi-graph-up display-4 text-success mb-3"></i>
                                     <h5>Статистика по месяцам</h5>
                                     <p class="text-muted small">Динамика посещаемости за год</p>
                                     <a href="{% url 'generate_report' 'monthly_stats' %}" class="btn btn-success">
-                                        <i class="bi bi-download"></i> Скачать
+                                        Скачать
                                     </a>
                                 </div>
                             </div>
@@ -144,11 +120,10 @@
                         <div class="col-md-4 mb-3">
                             <div class="card h-100">
                                 <div class="card-body text-center">
-                                    <i class="bi bi-person-lines-fill display-4 text-info mb-3"></i>
                                     <h5>Список учеников</h5>
                                     <p class="text-muted small">Информация о ваших учениках</p>
                                     <a href="{% url 'student_list' %}" class="btn btn-info">
-                                        <i class="bi bi-eye"></i> Просмотреть
+                                        Просмотреть
                                     </a>
                                 </div>
                             </div>

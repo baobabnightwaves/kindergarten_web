@@ -2,63 +2,75 @@
 
 {% block title %}{{ title }}{% endblock %}
 
+{% block extra_css %}
+<style>
+.form-container { max-width: 700px; margin: 0 auto; padding: 1rem; }
+.form-card { border: none; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-radius: 8px; }
+.form-header { background: #28a745; color: white; padding: 1rem 1.5rem; border-radius: 8px 8px 0 0; }
+.form-header h4 { margin: 0; font-size: 1.1rem; font-weight: 500; }
+.form-body { padding: 1.5rem; }
+.form-body > form > div:not(.btn-actions), .form-body > form > .row { margin-bottom: 1rem; }
+.form-body label { font-size: 0.9rem; font-weight: 500; color: #495057; margin-bottom: 0.3rem; display: block; }
+.form-body input[type="text"], .form-body input[type="date"], .form-body input[type="email"], .form-body input[type="tel"], .form-body input[type="number"], .form-body input[type="password"], .form-body select, .form-body textarea { font-size: 0.9rem; padding: 0.5rem 0.75rem; border: 1px solid #ced4da; border-radius: 4px; width: 100%; transition: border-color 0.15s; }
+.form-body input:focus, .form-body select:focus, .form-body textarea:focus { border-color: #28a745; outline: none; box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.1); }
+.btn-compact { padding: 0.5rem 1.5rem; font-size: 0.9rem; border-radius: 4px; font-weight: 500; }
+.btn-actions { padding-top: 1.5rem; margin-top: 1.5rem; border-top: 1px solid #e9ecef; display: flex; gap: 0.75rem; }
+.row-compact { margin-left: -0.5rem; margin-right: -0.5rem; }
+.row-compact > [class*='col-'] { padding-left: 0.5rem; padding-right: 0.5rem; }
+.error-text { font-size: 0.8rem; color: #dc3545; margin-top: 0.25rem; }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="row">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">
-                <h4 class="mb-0">{{ title }}</h4>
-            </div>
-            <div class="card-body">
-                <form method="post">
-                    {% csrf_token %}
-                    
-                    <div class="mb-3">
-                        <label for="{{ form.teacher_fio.id_for_label }}" class="form-label">
-                            ФИО воспитателя
-                        </label>
-                        {{ form.teacher_fio }}
-                        {% if form.teacher_fio.errors %}
-                        <div class="text-danger small">{{ form.teacher_fio.errors }}</div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.teacher_position.id_for_label }}" class="form-label">
-                                    Должность
-                                </label>
-                                {{ form.teacher_position }}
-                                {% if form.teacher_position.errors %}
-                                <div class="text-danger small">{{ form.teacher_position.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.teacher_number.id_for_label }}" class="form-label">
-                                    Номер телефона
-                                </label>
-                                {{ form.teacher_number }}
-                                {% if form.teacher_number.errors %}
-                                <div class="text-danger small">{{ form.teacher_number.errors }}</div>
-                                {% endif %}
-                            </div>
+<div class="form-container">
+    <div class="card form-card">
+        <div class="form-header">
+            <h4>{{ title }}</h4>
+        </div>
+        <div class="form-body">
+            <form method="post">
+                {% csrf_token %}
+                
+                <div>
+                    <label for="{{ form.teacher_fio.id_for_label }}">ФИО воспитателя</label>
+                    {{ form.teacher_fio }}
+                    {% if form.teacher_fio.errors %}
+                    <div class="error-text">{{ form.teacher_fio.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="row row-compact">
+                    <div class="col-md-6">
+                        <div>
+                            <label for="{{ form.teacher_position.id_for_label }}">Должность</label>
+                            {{ form.teacher_position }}
+                            {% if form.teacher_position.errors %}
+                            <div class="error-text">{{ form.teacher_position.errors }}</div>
+                            {% endif %}
                         </div>
                     </div>
                     
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-save"></i> Сохранить
-                        </button>
-                        <a href="{% url 'teacher_list' %}" class="btn btn-secondary">
-                            <i class="bi bi-x-circle"></i> Отмена
-                        </a>
+                    <div class="col-md-6">
+                        <div>
+                            <label for="{{ form.teacher_number.id_for_label }}">Номер телефона</label>
+                            {{ form.teacher_number }}
+                            {% if form.teacher_number.errors %}
+                            <div class="error-text">{{ form.teacher_number.errors }}</div>
+                            {% endif %}
+                        </div>
                     </div>
-                </form>
-            </div>
+                </div>
+                
+                <!-- Кнопки действий -->
+                <div class="btn-actions">
+                    <button type="submit" class="btn btn-primary btn-compact">
+                        Сохранить
+                    </button>
+                    <a href="{% url 'teacher_list' %}" class="btn btn-secondary btn-compact">
+                        Отмена
+                    </a>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -67,12 +79,13 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Добавляем классы к полям формы
     const inputs = document.querySelectorAll('input, select, textarea');
     inputs.forEach(input => {
-        if (!input.classList.contains('form-control') && 
+        if (!input.classList.contains('form-control-compact') && 
             input.type !== 'checkbox' && 
             input.type !== 'radio') {
-            input.classList.add('form-control');
+            input.classList.add('form-control', 'form-control-compact');
         }
     });
 });

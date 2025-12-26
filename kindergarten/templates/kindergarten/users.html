@@ -4,10 +4,11 @@
 
 {% block content %}
 <div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1><i class="bi bi-people"></i> Управление пользователями</h1>
-        <a href="{% url 'create_user' %}" class="btn btn-primary">
-            <i class="bi bi-person-plus"></i> Создать нового пользователя
+    <h1 class="mb-3">Управление пользователями</h1>
+    
+    <div class="mb-4">
+        <a href="{% url 'create_user' %}" class="btn btn-primary btn-lg">
+            Создать нового пользователя
         </a>
     </div>
 
@@ -39,46 +40,10 @@
                 </div>
                 <div class="col-md-2 d-flex align-items-end">
                     <button type="submit" class="btn btn-primary w-100">
-                        <i class="bi bi-funnel"></i> Фильтровать
+                        Фильтровать
                     </button>
                 </div>
             </form>
-        </div>
-    </div>
-
-    <!-- Статистика -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card text-white bg-primary">
-                <div class="card-body">
-                    <h5 class="card-title">Всего пользователей</h5>
-                    <h2>{{ users.paginator.count }}</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card text-white bg-success">
-                <div class="card-body">
-                    <h5 class="card-title">Заведующие</h5>
-                    <h2>{{ director_count }}</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card text-white bg-info">
-                <div class="card-body">
-                    <h5 class="card-title">Воспитатели</h5>
-                    <h2>{{ teacher_count }}</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card text-white bg-warning">
-                <div class="card-body">
-                    <h5 class="card-title">Родители</h5>
-                    <h2>{{ parent_count }}</h2>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -87,7 +52,7 @@
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-hover">
-                    <thead>
+                    <thead class="table-dark text-dark">
                         <tr>
                             <th>ID</th>
                             <th>Имя пользователя</th>
@@ -106,9 +71,6 @@
                             <td>{{ user.id }}</td>
                             <td>
                                 <strong>{{ user.username }}</strong>
-                                {% if user.is_superuser %}
-                                    <span class="badge bg-danger">Суперпользователь</span>
-                                {% endif %}
                             </td>
                             <td>
                                 {% if user.parent_profile %}
@@ -120,10 +82,14 @@
                                 {% endif %}
                             </td>
                             <td>
-                                {% if user.groups.all %}
+                                {% if user.is_superuser %}
+                                    <span class="badge bg-danger">
+                                        Суперпользователь
+                                    </span>
+                                {% elif user.groups.all %}
                                     {% for group in user.groups.all %}
                                         <span class="badge 
-                                            {% if group.name == 'Заведующие' %}bg-warning
+                                            {% if group.name == 'Заведующие' %}bg-warning text-dark
                                             {% elif group.name == 'Воспитатели' %}bg-success
                                             {% elif group.name == 'Родители' %}bg-info
                                             {% else %}bg-secondary{% endif %}">
@@ -151,9 +117,6 @@
                                 {% else %}
                                     <span class="badge bg-danger">Неактивен</span>
                                 {% endif %}
-                                {% if user.is_staff %}
-                                    <span class="badge bg-dark">Персонал</span>
-                                {% endif %}
                             </td>
                             <td>
                                 <div class="btn-group" role="group">
@@ -165,13 +128,13 @@
                                         <li>
                                             <a class="dropdown-item" href="#" data-bs-toggle="modal" 
                                                data-bs-target="#editUserModal{{ user.id }}">
-                                                <i class="bi bi-pencil"></i> Редактировать
+                                                Редактировать
                                             </a>
                                         </li>
                                         <li>
                                             <a class="dropdown-item" href="#" data-bs-toggle="modal" 
                                                data-bs-target="#changePasswordModal{{ user.id }}">
-                                                <i class="bi bi-key"></i> Сменить пароль
+                                                Сменить пароль
                                             </a>
                                         </li>
                                         <li><hr class="dropdown-divider"></li>
@@ -179,12 +142,12 @@
                                             {% if user.is_active %}
                                                 <a class="dropdown-item text-danger" href="{% url 'deactivate_user' user.id %}" 
                                                    onclick="return confirm('Вы уверены, что хотите деактивировать пользователя?')">
-                                                    <i class="bi bi-person-x"></i> Деактивировать
+                                                    Деактивировать
                                                 </a>
                                             {% else %}
                                                 <a class="dropdown-item text-success" href="{% url 'activate_user' user.id %}"
                                                    onclick="return confirm('Вы уверены, что хотите активировать пользователя?')">
-                                                    <i class="bi bi-person-check"></i> Активировать
+                                                    Активировать
                                                 </a>
                                             {% endif %}
                                         </li>
@@ -192,7 +155,7 @@
                                         <li>
                                             <a class="dropdown-item text-danger" href="{% url 'delete_user' user.id %}" 
                                                onclick="return confirm('Вы уверены, что хотите удалить пользователя? Это действие нельзя отменить!')">
-                                                <i class="bi bi-trash"></i> Удалить
+                                                Удалить
                                             </a>
                                         </li>
                                         {% endif %}
@@ -224,38 +187,73 @@
                                                 </div>
                                             </div>
                                             
-                                            <div class="row">
-                                                <div class="col-md-6 mb-3">
-                                                    <label class="form-label">ФИО</label>
-                                                    <input type="text" name="full_name" class="form-control" 
-                                                           value="{% if user.parent_profile %}{{ user.parent_profile.parent_fio }}{% elif user.teacher_profile %}{{ user.teacher_profile.teacher_fio }}{% endif %}">
+                                            <div class="row profile-selection-section">
+                                                <!-- Выбор профиля родителя (показывается только для роли Родители) -->
+                                                <div class="col-md-12 mb-3 parent-profile-select" 
+                                                     style="display: {% if user.groups.all.0.name == 'Родители' %}block{% else %}none{% endif %};">
+                                                    <label class="form-label">Выбрать профиль родителя *</label>
+                                                    <select name="parent_profile" class="form-select">
+                                                        <option value="">-- Не выбран --</option>
+                                                        {% for parent in all_parents %}
+                                                        <option value="{{ parent.parent_id }}" 
+                                                                {% if user.parent_profile and user.parent_profile.parent_id == parent.parent_id %}selected{% endif %}>
+                                                            {{ parent.parent_fio }} ({{ parent.parent_number }})
+                                                        </option>
+                                                        {% endfor %}
+                                                    </select>
+                                                    <small class="text-muted">Выберите существующего родителя из базы данных</small>
                                                 </div>
-                                                <div class="col-md-6 mb-3">
-                                                    <label class="form-label">Телефон</label>
-                                                    <input type="text" name="phone" class="form-control" 
-                                                           value="{% if user.parent_profile %}{{ user.parent_profile.parent_number }}{% elif user.teacher_profile %}{{ user.teacher_profile.teacher_number }}{% endif %}">
+                                                
+                                                <!-- Выбор профиля воспитателя (показывается только для роли Воспитатели) -->
+                                                <div class="col-md-12 mb-3 teacher-profile-select" 
+                                                     style="display: {% if user.groups.all.0.name == 'Воспитатели' %}block{% else %}none{% endif %};">
+                                                    <label class="form-label">Выбрать профиль воспитателя *</label>
+                                                    <select name="teacher_profile" class="form-select">
+                                                        <option value="">-- Не выбран --</option>
+                                                        {% for teacher in all_teachers %}
+                                                        <option value="{{ teacher.teacher_id }}" 
+                                                                {% if user.teacher_profile and user.teacher_profile.teacher_id == teacher.teacher_id %}selected{% endif %}>
+                                                            {{ teacher.teacher_fio }} - {{ teacher.teacher_position }} ({{ teacher.teacher_number }})
+                                                        </option>
+                                                        {% endfor %}
+                                                    </select>
+                                                    <small class="text-muted">Выберите существующего воспитателя из базы данных</small>
                                                 </div>
                                             </div>
                                             
                                             <div class="mb-3">
-                                                <label class="form-label">Роли</label>
+                                                <label class="form-label">Роль *</label>
                                                 <div>
                                                     {% for group in all_groups %}
-                                                    <div class="form-check form-check-inline">
-                                                        <input class="form-check-input" type="checkbox" 
-                                                               name="groups" value="{{ group.id }}" 
-                                                               id="group{{ user.id }}_{{ group.id }}"
-                                                               {% if group in user.groups.all %}checked{% endif %}>
-                                                        <label class="form-check-label" for="group{{ user.id }}_{{ group.id }}">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="radio" 
+                                                               name="role" value="{{ group.id }}" 
+                                                               id="role{{ user.id }}_{{ group.id }}"
+                                                               {% if group in user.groups.all %}checked{% endif %}
+                                                               required>
+                                                        <label class="form-check-label" for="role{{ user.id }}_{{ group.id }}">
                                                             {{ group.name }}
                                                         </label>
                                                     </div>
                                                     {% endfor %}
+                                                    
+                                                    <!-- Опция для суперпользователя/администратора -->
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="radio" 
+                                                               name="role" value="superuser" 
+                                                               id="role{{ user.id }}_superuser"
+                                                               {% if user.is_superuser %}checked{% endif %}
+                                                               required>
+                                                        <label class="form-check-label" for="role{{ user.id }}_superuser">
+                                                            Администратор (Суперпользователь)
+                                                        </label>
+                                                    </div>
                                                 </div>
+                                                <small class="text-muted">Выберите одну роль для пользователя</small>
                                             </div>
                                             
                                             <div class="row">
-                                                <div class="col-md-6">
+                                                <div class="col-md-12">
                                                     <div class="form-check">
                                                         <input class="form-check-input" type="checkbox" 
                                                             name="is_active" id="is_active{{ user.id }}" 
@@ -265,19 +263,6 @@
                                                         </label>
                                                     </div>
                                                 </div>
-                                                <div class="col-md-6">
-                                                    {% if not user.is_superuser and user.groups.all.0.name != 'Родители' %}
-                                                    <div class="form-check">
-                                                        <input class="form-check-input" type="checkbox" 
-                                                            name="is_staff" id="is_staff{{ user.id }}" 
-                                                            {% if user.is_staff %}checked{% endif %}>
-                                                        <label class="form-check-label" for="is_staff{{ user.id }}">
-                                                            Персонал (доступ в админ-панель)
-                                                        </label>
-                                                    </div>
-                                                    {% endif %}
-                                                </div>
-                                            </div>
                                             </div>
                                         </div>
                                         <div class="modal-footer">
@@ -320,7 +305,6 @@
                         {% empty %}
                         <tr>
                             <td colspan="9" class="text-center text-muted py-4">
-                                <i class="bi bi-people display-4"></i>
                                 <h5 class="mt-3">Пользователи не найдены</h5>
                                 <p>Создайте первого пользователя с помощью кнопки выше</p>
                             </td>
@@ -369,29 +353,9 @@
 </div>
 {% endblock %}
 
-{% block extra_js %}
+{% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Автоматическое закрытие модальных окон после сохранения
-    const editForms = document.querySelectorAll('form[action*="edit_user"], form[action*="change_user_password"]');
-    editForms.forEach(form => {
-        form.addEventListener('submit', function(e) {
-            const formData = new FormData(this);
-            fetch(this.action, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRFToken': '{{ csrf_token }}'
-                }
-            }).then(response => {
-                if (response.ok) {
-                    location.reload();
-                }
-            });
-            e.preventDefault();
-        });
-    });
 
     // Подсветка строк при наведении
     const tableRows = document.querySelectorAll('table tbody tr');
@@ -403,82 +367,56 @@ document.addEventListener('DOMContentLoaded', function() {
             this.style.backgroundColor = '';
         });
     });
-});
-// Динамическое управление чекбоксами при редактировании пользователя
-document.addEventListener('DOMContentLoaded', function() {
-    // Для каждой модалки редактирования
+    
+    // Управление отображением профилей в зависимости от выбранной роли
     const editModals = document.querySelectorAll('div[id^="editUserModal"]');
     
-    editModals.forEach(modal => {
-        const userId = modal.id.replace('editUserModal', '');
-        const form = modal.querySelector('form');
-        const groupCheckboxes = form.querySelectorAll('input[name="groups"]');
-        const isStaffCheckbox = form.querySelector('input[name="is_staff"]');
+    editModals.forEach((modal) => {
+        const roleRadios = modal.querySelectorAll('input[name="role"]');
+        const parentProfileSelect = modal.querySelector('.parent-profile-select');
+        const teacherProfileSelect = modal.querySelector('.teacher-profile-select');
         
-        // Если есть чекбокс "Персонал"
-        if (isStaffCheckbox) {
-            // Функция для обновления состояния чекбокса "Персонал"
-            function updateStaffCheckbox() {
-                const isParentSelected = Array.from(groupCheckboxes).some(cb => 
-                    cb.checked && cb.nextElementSibling.textContent.includes('Родители')
-                );
-                
-                if (isParentSelected) {
-                    // Родитель не может быть персоналом
-                    isStaffCheckbox.checked = false;
-                    isStaffCheckbox.disabled = true;
-                    isStaffCheckbox.parentElement.style.opacity = '0.5';
-                } else {
-                    // Другие роли могут быть персоналом
-                    isStaffCheckbox.disabled = false;
-                    isStaffCheckbox.parentElement.style.opacity = '1';
-                }
+        // Функция для обновления видимости полей профиля
+        function updateProfileVisibility() {
+            const selectedRole = modal.querySelector('input[name="role"]:checked');
+            
+            if (!selectedRole) return;
+            
+            const roleValue = selectedRole.value;
+            const roleLabel = selectedRole.nextElementSibling ? selectedRole.nextElementSibling.textContent.trim() : '';
+            
+            // Убираем фокус с текущих элементов в скрываемых секциях перед скрытием
+            if (parentProfileSelect && document.activeElement && parentProfileSelect.contains(document.activeElement)) {
+                document.activeElement.blur();
+            }
+            if (teacherProfileSelect && document.activeElement && teacherProfileSelect.contains(document.activeElement)) {
+                document.activeElement.blur();
             }
             
-            // Проверяем при загрузке
-            updateStaffCheckbox();
+            // Скрываем все поля профилей
+            if (parentProfileSelect) parentProfileSelect.style.display = 'none';
+            if (teacherProfileSelect) teacherProfileSelect.style.display = 'none';
             
-            // И при каждом изменении группы
-            groupCheckboxes.forEach(checkbox => {
-                checkbox.addEventListener('change', function() {
-                    // Проверяем конфликты ролей
-                    const selectedGroups = Array.from(groupCheckboxes)
-                        .filter(cb => cb.checked)
-                        .map(cb => cb.nextElementSibling.textContent.trim());
-                    
-                    const hasParent = selectedGroups.includes('Родители');
-                    const hasTeacher = selectedGroups.includes('Воспитатели');
-                    const hasDirector = selectedGroups.includes('Заведующие');
-                    
-                    // Нельзя выбрать родителя вместе с воспитателем или заведующим
-                    if (hasParent && (hasTeacher || hasDirector)) {
-                        alert('Ошибка: Пользователь не может быть одновременно родителем и воспитателем/заведующим!');
-                        this.checked = false;
-                        return;
-                    }
-                    
-                    // Нельзя выбрать воспитателя вместе с заведующим
-                    if (hasTeacher && hasDirector) {
-                        alert('Ошибка: Пользователь не может быть одновременно воспитателем и заведующим!');
-                        this.checked = false;
-                        return;
-                    }
-                    
-                    updateStaffCheckbox();
-                });
-            });
+            // Показываем нужное поле в зависимости от роли
+            if (roleValue === 'superuser' || roleLabel.includes('Администратор')) {
+                // Для администратора не показываем профили
+            } else if (roleLabel.includes('Родители')) {
+                if (parentProfileSelect) parentProfileSelect.style.display = 'block';
+            } else if (roleLabel.includes('Воспитатели') || roleLabel.includes('Заведующие')) {
+                if (teacherProfileSelect) teacherProfileSelect.style.display = 'block';
+            }
         }
-    });
-    
-    // Предотвращаем выбор конфликтующих ролей при создании пользователя
-    const roleRadios = document.querySelectorAll('input[name="role"]');
-    if (roleRadios.length > 0) {
-        roleRadios.forEach(radio => {
-            radio.addEventListener('change', function() {
-                // Можно оставить пустым или добавить дополнительную логику
-            });
+        
+        // Вызываем при открытии модального окна
+        modal.addEventListener('show.bs.modal', function() {
+            setTimeout(updateProfileVisibility, 50);
         });
-    }
+        
+        // Обновляем при изменении роли
+        roleRadios.forEach(radio => {
+            radio.addEventListener('change', updateProfileVisibility);
+        });
+    });
 });
 </script>
 

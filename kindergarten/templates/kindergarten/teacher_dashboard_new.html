@@ -1,0 +1,354 @@
+{% extends 'kindergarten/base.html' %}
+{% load static %}
+
+{% block title %}Дашборд воспитателя{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <h2><i class="fas fa-tachometer-alt"></i> Дашборд воспитателя</h2>
+    <p class="text-muted">{{ dashboard_data.teacher.fio }} - {{ dashboard_data.teacher.position }}</p>
+    <hr>
+
+    {% if dashboard_data %}
+        <!-- Ключевые метрики -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card text-center bg-primary text-white">
+                    <div class="card-body">
+                        <i class="fas fa-users fa-3x mb-2"></i>
+                        <h3>{{ dashboard_data.key_metrics.total_students }}</h3>
+                        <p class="mb-0">Всего учеников</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center bg-info text-white">
+                    <div class="card-body">
+                        <i class="fas fa-layer-group fa-3x mb-2"></i>
+                        <h3>{{ dashboard_data.key_metrics.total_groups }}</h3>
+                        <p class="mb-0">Групп</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center bg-success text-white">
+                    <div class="card-body">
+                        <i class="fas fa-check fa-3x mb-2"></i>
+                        <h3>{{ dashboard_data.key_metrics.today_present }}</h3>
+                        <p class="mb-0">Присутствуют сегодня</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center bg-warning text-dark">
+                    <div class="card-body">
+                        <i class="fas fa-percentage fa-3x mb-2"></i>
+                        <h3>{{ dashboard_data.key_metrics.today_percentage }}%</h3>
+                        <p class="mb-0">Посещаемость сегодня</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Элемент 1: Столбчатая диаграмма - посещаемость по группам -->
+        <div class="row mb-4">
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Посещаемость по группам (текущий месяц)</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="groupAttendanceChart" height="250"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Элемент 2: Линейный график - динамика посещаемости -->
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="fas fa-chart-line"></i> Динамика посещаемости (30 дней)</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="attendanceTrendChart" height="250"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Элемент 3: Таблица - ученики с низкой посещаемостью -->
+        <div class="row mb-4">
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header bg-danger text-white">
+                        <h5 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Ученики с низкой посещаемостью (&lt;70%)</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if dashboard_data.students_low_attendance %}
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>#</th>
+                                            <th>ФИО</th>
+                                            <th>Группа</th>
+                                            <th>Присутствовал</th>
+                                            <th>Всего</th>
+                                            <th>Процент</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for student in dashboard_data.students_low_attendance %}
+                                            <tr>
+                                                <td>{{ forloop.counter }}</td>
+                                                <td>{{ student.fio }}</td>
+                                                <td>{{ student.group }}</td>
+                                                <td class="text-success"><strong>{{ student.present_days }}</strong></td>
+                                                <td>{{ student.total_days }}</td>
+                                                <td>
+                                                    <span class="badge bg-danger">{{ student.attendance_percentage }}%</span>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-success mb-0">
+                                <i class="fas fa-check-circle"></i> Все ученики имеют хорошую посещаемость!
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Элемент 4: Статистика по группам (заполненность) -->
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="fas fa-users-cog"></i> Статистика по группам</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if dashboard_data.age_distribution %}
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>Группа</th>
+                                            <th>Категория</th>
+                                            <th>Учеников</th>
+                                            <th>Вместимость</th>
+                                            <th>Заполненность</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for group in dashboard_data.age_distribution %}
+                                            <tr>
+                                                <td>{{ group.group_name }}</td>
+                                                <td>{{ group.category }}</td>
+                                                <td><strong>{{ group.students_count }}</strong></td>
+                                                <td>{{ group.max_capacity }}</td>
+                                                <td>
+                                                    <div class="progress" style="height: 25px;">
+                                                        <div class="progress-bar 
+                                                            {% if group.fill_percentage >= 90 %}bg-danger
+                                                            {% elif group.fill_percentage >= 70 %}bg-warning
+                                                            {% else %}bg-success
+                                                            {% endif %}" 
+                                                            role="progressbar" 
+                                                            style="width: {{ group.fill_percentage }}%"
+                                                            aria-valuenow="{{ group.fill_percentage }}" 
+                                                            aria-valuemin="0" 
+                                                            aria-valuemax="100">
+                                                            {{ group.fill_percentage }}%
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-info mb-0">
+                                <i class="fas fa-info-circle"></i> Нет данных о группах
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Элемент 5: Круговая диаграмма - распределение по группам -->
+        <div class="row mb-4">
+            <div class="col-lg-12">
+                <div class="card">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="fas fa-chart-pie"></i> Распределение учеников по группам</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="studentDistributionChart" height="80"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    {% else %}
+        <div class="alert alert-danger">
+            <i class="fas fa-exclamation-circle"></i> Ошибка при загрузке данных дашборда
+        </div>
+    {% endif %}
+
+    <div class="mt-4">
+        <a href="{% url 'reports_dashboard' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Назад
+        </a>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // График 1: Посещаемость по группам
+    const ctx1 = document.getElementById('groupAttendanceChart');
+    const groupData = {{ dashboard_data.group_attendance_stats|safe }};
+    
+    new Chart(ctx1, {
+        type: 'bar',
+        data: {
+            labels: groupData.map(g => g.group_name),
+            datasets: [
+                {
+                    label: 'Присутствовали',
+                    data: groupData.map(g => g.present),
+                    backgroundColor: 'rgba(40, 167, 69, 0.7)',
+                    borderColor: 'rgba(40, 167, 69, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Отсутствовали',
+                    data: groupData.map(g => g.absent),
+                    backgroundColor: 'rgba(220, 53, 69, 0.7)',
+                    borderColor: 'rgba(220, 53, 69, 1)',
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Количество дней'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            }
+        }
+    });
+
+    // График 2: Динамика посещаемости
+    const ctx2 = document.getElementById('attendanceTrendChart');
+    const trendData = {{ dashboard_data.attendance_trend|safe }};
+    
+    new Chart(ctx2, {
+        type: 'line',
+        data: {
+            labels: trendData.labels,
+            datasets: [{
+                label: 'Посещаемость (%)',
+                data: trendData.data,
+                backgroundColor: 'rgba(40, 167, 69, 0.2)',
+                borderColor: 'rgba(40, 167, 69, 1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    title: {
+                        display: true,
+                        text: 'Процент посещаемости'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            }
+        }
+    });
+
+    // График 3: Распределение учеников по группам
+    const ctx3 = document.getElementById('studentDistributionChart');
+    const distributionData = {{ dashboard_data.age_distribution|safe }};
+    
+    new Chart(ctx3, {
+        type: 'doughnut',
+        data: {
+            labels: distributionData.map(g => g.group_name),
+            datasets: [{
+                label: 'Количество учеников',
+                data: distributionData.map(g => g.students_count),
+                backgroundColor: [
+                    'rgba(0, 123, 255, 0.7)',
+                    'rgba(40, 167, 69, 0.7)',
+                    'rgba(255, 193, 7, 0.7)',
+                    'rgba(220, 53, 69, 0.7)',
+                    'rgba(108, 117, 125, 0.7)',
+                    'rgba(23, 162, 184, 0.7)'
+                ],
+                borderColor: [
+                    'rgba(0, 123, 255, 1)',
+                    'rgba(40, 167, 69, 1)',
+                    'rgba(255, 193, 7, 1)',
+                    'rgba(220, 53, 69, 1)',
+                    'rgba(108, 117, 125, 1)',
+                    'rgba(23, 162, 184, 1)'
+                ],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'right'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            label += context.parsed + ' учеников';
+                            return label;
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+
+{% endblock %}

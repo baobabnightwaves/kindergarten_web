@@ -5,13 +5,13 @@
 {% block content %}
 <div class="card">
     <div class="card-header bg-danger text-white">
-        <h4 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Подтверждение удаления</h4>
+        <h4 class="mb-0">Подтверждение удаления</h4>
     </div>
     <div class="card-body">
         <h5>Вы уверены, что хотите удалить родителя?</h5>
         
         <div class="alert alert-warning mt-3">
-            <h6><i class="bi bi-info-circle"></i> Информация о родителе:</h6>
+            <h6>Информация о родителе:</h6>
             <ul>
                 <li><strong>ФИО:</strong> {{ parent.parent_fio }}</li>
                 <li><strong>Телефон:</strong> {{ parent.parent_number }}</li>
@@ -20,7 +20,6 @@
             
             {% if parent.studentparent_set.count > 0 %}
             <div class="alert alert-danger mt-2">
-                <i class="bi bi-exclamation-octagon"></i>
                 <strong>Внимание!</strong> У этого родителя есть привязанные дети. 
                 Удаление родителя также удалит все связи с детьми.
             </div>
@@ -31,13 +30,13 @@
             {% csrf_token %}
             <div class="d-flex gap-2">
                 <button type="submit" class="btn btn-danger">
-                    <i class="bi bi-trash"></i> Да, удалить
+                    Да, удалить
                 </button>
                 <a href="{% url 'parent_detail' parent.pk %}" class="btn btn-secondary">
-                    <i class="bi bi-x-circle"></i> Отмена
+                    Отмена
                 </a>
                 <a href="{% url 'parent_list' %}" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left"></i> Назад к списку
+                    Назад к списку
                 </a>
             </div>
         </form>

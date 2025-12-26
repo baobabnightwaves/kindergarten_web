@@ -2,124 +2,188 @@
 
 {% block title %}{{ title }}{% endblock %}
 
+{% block extra_css %}
+<style>
+/* Компактный минималистичный стиль форм */
+.form-container {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+.form-card {
+    border: none;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border-radius: 8px;
+}
+
+.form-header {
+    background: #28a745;
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: 8px 8px 0 0;
+}
+
+.form-header h4 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+.form-body {
+    padding: 1.5rem;
+}
+
+.form-body > form > div:not(.btn-actions),
+.form-body > form > .row {
+    margin-bottom: 1rem;
+}
+
+.form-body label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #495057;
+    margin-bottom: 0.3rem;
+    display: block;
+}
+
+.form-body input[type="text"],
+.form-body input[type="date"],
+.form-body input[type="email"],
+.form-body input[type="tel"],
+.form-body input[type="number"],
+.form-body input[type="password"],
+.form-body select,
+.form-body textarea {
+    font-size: 0.9rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    width: 100%;
+    transition: border-color 0.15s;
+}
+
+.form-body input:focus,
+.form-body select:focus,
+.form-body textarea:focus {
+    border-color: #28a745;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.1);
+}
+
+.btn-compact {
+    padding: 0.5rem 1.5rem;
+    font-size: 0.9rem;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.btn-actions {
+    padding-top: 1.5rem;
+    margin-top: 1.5rem;
+    border-top: 1px solid #e9ecef;
+    display: flex;
+    gap: 0.75rem;
+}
+
+.row-compact {
+    margin-left: -0.5rem;
+    margin-right: -0.5rem;
+}
+
+.row-compact > [class*='col-'] {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+}
+
+.error-text {
+    font-size: 0.8rem;
+    color: #dc3545;
+    margin-top: 0.25rem;
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="row">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">
-                <h4 class="mb-0">{{ title }}</h4>
-            </div>
-            <div class="card-body">
-                <form method="post">
-                    {% csrf_token %}
-                    
-                    <div class="mb-3">
-                        <label for="{{ form.group_name.id_for_label }}" class="form-label">
-                            Название группы *
-                        </label>
-                        {{ form.group_name }}
-                        {% if form.group_name.errors %}
-                        <div class="text-danger small">{{ form.group_name.errors }}</div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.group_category.id_for_label }}" class="form-label">
-                                    Возрастная категория *
-                                </label>
-                                {{ form.group_category }}
-                                {% if form.group_category.errors %}
-                                <div class="text-danger small">{{ form.group_category.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.group_year.id_for_label }}" class="form-label">
-                                    Год обучения *
-                                </label>
-                                {{ form.group_year }}
-                                {% if form.group_year.errors %}
-                                <div class="text-danger small">{{ form.group_year.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.teacher.id_for_label }}" class="form-label">
-                                    Воспитатель
-                                </label>
-                                {{ form.teacher }}
-                                {% if form.teacher.errors %}
-                                <div class="text-danger small">{{ form.teacher.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.room_number.id_for_label }}" class="form-label">
-                                    Номер кабинета
-                                </label>
-                                {{ form.room_number }}
-                                {% if form.room_number.errors %}
-                                <div class="text-danger small">{{ form.room_number.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="{{ form.max_capacity.id_for_label }}" class="form-label">
-                            Максимальная наполняемость *
-                        </label>
-                        {{ form.max_capacity }}
-                        <div class="form-text">Максимум 30 детей в группе</div>
-                        {% if form.max_capacity.errors %}
-                        <div class="text-danger small">{{ form.max_capacity.errors }}</div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-save"></i> Сохранить
-                        </button>
-                        <a href="{% url 'group_list' %}" class="btn btn-secondary">
-                            <i class="bi bi-x-circle"></i> Отмена
-                        </a>
-                    </div>
-                </form>
-            </div>
+<div class="form-container">
+    <div class="card form-card">
+        <div class="form-header">
+            <h4>{{ title }}</h4>
         </div>
-    </div>
-    
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Информация</h5>
-            </div>
-            <div class="card-body">
-                <h6>Возрастные категории:</h6>
-                <ul class="small">
-                    <li><strong>Младшая:</strong> 2-3 года</li>
-                    <li><strong>Средняя:</strong> 3-4 года</li>
-                    <li><strong>Старшая:</strong> 4-5 лет</li>
-                    <li><strong>Подготовительная:</strong> 5-7 лет</li>
-                </ul>
+        <div class="form-body">
+            <form method="post">
+                {% csrf_token %}
                 
-                <h6 class="mt-3">Ограничения:</h6>
-                <ul class="small">
-                    <li>Максимум 30 детей в группе</li>
-                    <li>В группе может быть только 1 воспитатель</li>
-                    <li>Ребенок может быть только в одной группе</li>
-                </ul>
-            </div>
+                <div>
+                    <label for="{{ form.group_name.id_for_label }}">Название группы</label>
+                    {{ form.group_name }}
+                    {% if form.group_name.errors %}
+                    <div class="error-text">{{ form.group_name.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="row row-compact">
+                    <div class="col-md-6">
+                        <div>
+                            <label for="{{ form.group_category.id_for_label }}">Возрастная категория</label>
+                            {{ form.group_category }}
+                            {% if form.group_category.errors %}
+                            <div class="error-text">{{ form.group_category.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div>
+                            <label for="{{ form.group_year.id_for_label }}">Год обучения</label>
+                            {{ form.group_year }}
+                            {% if form.group_year.errors %}
+                            <div class="error-text">{{ form.group_year.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row row-compact">
+                    <div class="col-md-6">
+                        <div>
+                            <label for="{{ form.teacher.id_for_label }}">Воспитатель</label>
+                            {{ form.teacher }}
+                            {% if form.teacher.errors %}
+                            <div class="error-text">{{ form.teacher.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div>
+                            <label for="{{ form.room_number.id_for_label }}">Номер кабинета</label>
+                            {{ form.room_number }}
+                            {% if form.room_number.errors %}
+                            <div class="error-text">{{ form.room_number.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <label for="{{ form.max_capacity.id_for_label }}">Максимальная наполняемость</label>
+                    {{ form.max_capacity }}
+                    {% if form.max_capacity.errors %}
+                    <div class="error-text">{{ form.max_capacity.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <!-- Кнопки действий -->
+                <div class="btn-actions">
+                    <button type="submit" class="btn btn-primary btn-compact">
+                        Сохранить
+                    </button>
+                    <a href="{% url 'group_list' %}" class="btn btn-secondary btn-compact">
+                        Отмена
+                    </a>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -128,25 +192,15 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Добавляем классы к полям формы
     const inputs = document.querySelectorAll('input, select, textarea');
     inputs.forEach(input => {
-        if (!input.classList.contains('form-control') && 
+        if (!input.classList.contains('form-control-compact') && 
             input.type !== 'checkbox' && 
             input.type !== 'radio') {
-            input.classList.add('form-control');
+            input.classList.add('form-control', 'form-control-compact');
         }
     });
-    
-    const maxCapacityInput = document.getElementById('id_max_capacity');
-    if (maxCapacityInput) {
-        maxCapacityInput.addEventListener('change', function() {
-            const value = parseInt(this.value);
-            if (value > 30) {
-                alert('Максимальная наполняемость группы - 30 детей');
-                this.value = 30;
-            }
-        });
-    }
 });
 </script>
 {% endblock %}

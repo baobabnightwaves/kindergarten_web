@@ -1,0 +1,335 @@
+{% extends 'kindergarten/base.html' %}
+{% load static %}
+
+{% block title %}Выбор отчета{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <h2><i class="fas fa-chart-bar"></i> Выбор типа отчета</h2>
+    <hr>
+
+    <!-- Report Type Selection -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-clipboard-list"></i> Выберите тип отчета</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <!-- Group Report -->
+                <div class="col-md-4 mb-3">
+                    <div class="card h-100 border-primary">
+                        <div class="card-body text-center">
+                            <i class="fas fa-users fa-3x text-primary mb-3"></i>
+                            <h5 class="card-title">Отчет по группе</h5>
+                            <p class="card-text">Посещаемость и статистика группы с календарем и графиками</p>
+                            <button class="btn btn-primary" onclick="showGroupSelector()">
+                                Выбрать
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Student Report -->
+                <div class="col-md-4 mb-3">
+                    <div class="card h-100 border-success">
+                        <div class="card-body text-center">
+                            <i class="fas fa-user-graduate fa-3x text-success mb-3"></i>
+                            <h5 class="card-title">Отчет по ученику</h5>
+                            <p class="card-text">Индивидуальный отчет с календарем посещаемости ученика</p>
+                            <button class="btn btn-success" onclick="showStudentSelector()">
+                                Выбрать
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- All Groups Report (Teacher/Director/Admin) -->
+                {% if is_teacher or is_director or is_admin %}
+                <div class="col-md-4 mb-3">
+                    <div class="card h-100 border-info">
+                        <div class="card-body text-center">
+                            <i class="fas fa-chart-line fa-3x text-info mb-3"></i>
+                            <h5 class="card-title">
+                                {% if is_teacher %}Отчет по моим группам{% else %}Отчет по воспитателю{% endif %}
+                            </h5>
+                            <p class="card-text">
+                                {% if is_teacher %}
+                                Общая статистика по всем вашим группам
+                                {% else %}
+                                Статистика по всем группам выбранного воспитателя
+                                {% endif %}
+                            </p>
+                            <button class="btn btn-info" onclick="showTeacherSelector()">
+                                Выбрать
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Group Selector -->
+    <div id="groupSelector" class="card mb-4" style="display: none;">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-users"></i> Выберите группу</h5>
+        </div>
+        <div class="card-body">
+            <form method="get" action="{% url 'report_group' %}">
+                <div class="row">
+                    <div class="col-md-10">
+                        <select name="group_id" class="form-control" required>
+                            <option value="">-- Выберите группу --</option>
+                            {% for group in groups %}
+                                <option value="{{ group.group_id }}">
+                                    {{ group.group_name }} - {{ group.get_group_category_display }} ({{ group.current_students_count }} уч.)
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-arrow-right"></i> Открыть
+                        </button>
+                    </div>
+                </div>
+            </form>
+            <button class="btn btn-secondary btn-sm mt-2" onclick="hideAllSelectors()">Отмена</button>
+        </div>
+    </div>
+
+    <!-- Student Selector -->
+    <div id="studentSelector" class="card mb-4" style="display: none;">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0"><i class="fas fa-user-graduate"></i> Выберите ученика</h5>
+        </div>
+        <div class="card-body">
+            <!-- Filters -->
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="studentSearch" class="form-label">Поиск по имени</label>
+                    <input type="text" class="form-control" id="studentSearch" 
+                           placeholder="Введите ФИО ученика..." onkeyup="filterStudents()">
+                </div>
+                <div class="col-md-6">
+                    <label for="studentGroupFilter" class="form-label">Фильтр по группе</label>
+                    <select class="form-control" id="studentGroupFilter" onchange="filterStudents()">
+                        <option value="">Все группы</option>
+                        {% for group in groups %}
+                            <option value="{{ group.group_id }}">{{ group.group_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Student List -->
+            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                <table class="table table-hover">
+                    <thead class="table-light sticky-top">
+                        <tr>
+                            <th>ФИО</th>
+                            <th>Группа</th>
+                            <th>Возраст</th>
+                            <th>Действие</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentTableBody">
+                        {% for student in students %}
+                        <tr class="student-row" 
+                            data-student-name="{{ student.student_fio|lower }}" 
+                            data-student-group="{{ student.group.group_id|default:'' }}">
+                            <td>{{ student.student_fio }}</td>
+                            <td>
+                                {% if student.group %}
+                                    <span class="badge bg-info">{{ student.group.group_name }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Не назначена</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ student.age }} лет</td>
+                            <td>
+                                <a href="{% url 'report_student' student.student_id %}" 
+                                   class="btn btn-sm btn-success">
+                                    <i class="fas fa-chart-bar"></i> Открыть
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <button class="btn btn-secondary btn-sm mt-2" onclick="hideAllSelectors()">Отмена</button>
+        </div>
+    </div>
+
+    <!-- Teacher Selector (for Director/Admin) -->
+    {% if is_director or is_admin %}
+    <div id="teacherSelector" class="card mb-4" style="display: none;">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0"><i class="fas fa-chalkboard-teacher"></i> Выберите воспитателя</h5>
+        </div>
+        <div class="card-body">
+            <!-- Filters -->
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="teacherSearch" class="form-label">Поиск по имени</label>
+                    <input type="text" class="form-control" id="teacherSearch" 
+                           placeholder="Введите ФИО воспитателя..." onkeyup="filterTeachers()">
+                </div>
+                <div class="col-md-6">
+                    <label for="teacherPositionFilter" class="form-label">Фильтр по должности</label>
+                    <select class="form-control" id="teacherPositionFilter" onchange="filterTeachers()">
+                        <option value="">Все должности</option>
+                        <option value="Младший воспитатель">Младший воспитатель</option>
+                        <option value="Воспитатель">Воспитатель</option>
+                        <option value="Старший воспитатель">Старший воспитатель</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Teacher List -->
+            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                <table class="table table-hover">
+                    <thead class="table-light sticky-top">
+                        <tr>
+                            <th>ФИО</th>
+                            <th>Должность</th>
+                            <th>Телефон</th>
+                            <th>Количество групп</th>
+                            <th>Действие</th>
+                        </tr>
+                    </thead>
+                    <tbody id="teacherTableBody">
+                        {% for teacher in teachers %}
+                        <tr class="teacher-row" 
+                            data-teacher-name="{{ teacher.teacher_fio|lower }}" 
+                            data-teacher-position="{{ teacher.teacher_position }}">
+                            <td>{{ teacher.teacher_fio }}</td>
+                            <td>
+                                <span class="badge bg-secondary">{{ teacher.get_teacher_position_display }}</span>
+                            </td>
+                            <td>
+                                <small><i class="fas fa-phone"></i> {{ teacher.teacher_number }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-primary">{{ teacher.groups_count }}</span>
+                            </td>
+                            <td>
+                                <a href="{% url 'report_teacher_groups' %}?teacher_id={{ teacher.teacher_id }}" 
+                                   class="btn btn-sm btn-info">
+                                    <i class="fas fa-chart-bar"></i> Открыть
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <button class="btn btn-secondary btn-sm mt-2" onclick="hideAllSelectors()">Отмена</button>
+        </div>
+    </div>
+    {% elif is_teacher %}
+    <!-- For teachers, direct link to their own groups -->
+    <div id="teacherSelector" class="card mb-4" style="display: none;">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0"><i class="fas fa-chalkboard-teacher"></i> Отчет по вашим группам</h5>
+        </div>
+        <div class="card-body text-center">
+            <p>Вы увидите общий отчет по всем вашим группам с графиками посещаемости и таблицей наполняемости.</p>
+            <a href="{% url 'report_teacher_groups' %}" class="btn btn-info btn-lg">
+                <i class="fas fa-chart-line"></i> Открыть отчет
+            </a>
+            <br>
+            <button class="btn btn-secondary btn-sm mt-3" onclick="hideAllSelectors()">Отмена</button>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="mt-4">
+        <a href="{% url 'reports_dashboard' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Назад к дашборду
+        </a>
+    </div>
+</div>
+
+<style>
+.card {
+    box-shadow: 0 2px 4px rgba(0,0,0,.1);
+}
+
+.card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,.15);
+    transition: box-shadow 0.3s ease;
+}
+
+.sticky-top {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+</style>
+
+<script>
+function showGroupSelector() {
+    hideAllSelectors();
+    document.getElementById('groupSelector').style.display = 'block';
+}
+
+function showStudentSelector() {
+    hideAllSelectors();
+    document.getElementById('studentSelector').style.display = 'block';
+}
+
+function showTeacherSelector() {
+    hideAllSelectors();
+    document.getElementById('teacherSelector').style.display = 'block';
+}
+
+function hideAllSelectors() {
+    document.getElementById('groupSelector').style.display = 'none';
+    document.getElementById('studentSelector').style.display = 'none';
+    document.getElementById('teacherSelector').style.display = 'none';
+}
+
+function filterStudents() {
+    const searchText = document.getElementById('studentSearch').value.toLowerCase();
+    const groupFilter = document.getElementById('studentGroupFilter').value;
+    const rows = document.querySelectorAll('.student-row');
+    
+    rows.forEach(row => {
+        const studentName = row.getAttribute('data-student-name');
+        const studentGroup = row.getAttribute('data-student-group');
+        
+        const nameMatch = studentName.includes(searchText);
+        const groupMatch = !groupFilter || studentGroup === groupFilter;
+        
+        if (nameMatch && groupMatch) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+function filterTeachers() {
+    const searchText = document.getElementById('teacherSearch').value.toLowerCase();
+    const positionFilter = document.getElementById('teacherPositionFilter').value;
+    const rows = document.querySelectorAll('.teacher-row');
+    
+    rows.forEach(row => {
+        const teacherName = row.getAttribute('data-teacher-name');
+        const teacherPosition = row.getAttribute('data-teacher-position');
+        
+        const nameMatch = teacherName.includes(searchText);
+        const positionMatch = !positionFilter || teacherPosition === positionFilter;
+        
+        if (nameMatch && positionMatch) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+</script>
+{% endblock %}

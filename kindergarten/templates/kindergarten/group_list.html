@@ -4,12 +4,11 @@
 
 {% block content %}
 <div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1><i class="bi bi-diagram-3-fill"></i> Группы детского сада</h1>
-        
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="mb-0">Группы детского сада</h1>
         {% if user.groups.all.0.name == 'Заведующие' or user.is_superuser %}
         <a href="{% url 'group_create' %}" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> Создать новую группу
+            Создать новую группу
         </a>
         {% endif %}
     </div>
@@ -54,7 +53,7 @@
                 
                 <div class="col-md-2 d-flex align-items-end">
                     <button type="submit" class="btn btn-primary w-100">
-                        <i class="bi bi-search"></i> Поиск
+                        Поиск
                     </button>
                 </div>
             </form>
@@ -73,14 +72,14 @@
                     | Год: {{ request.GET.year }}
                     {% endif %}
                     <a href="{% url 'group_list' %}" class="ms-2">
-                        <i class="bi bi-x-circle"></i> Сбросить фильтры
+                        Сбросить фильтры
                     </a>
                 </small>
             </div>
             {% else %}
             <div class="mt-3">
                 <small class="text-muted">
-                    <i class="bi bi-info-circle"></i> Всего групп: <strong>{{ groups.paginator.count }}</strong>
+                    Всего групп: <strong>{{ groups.paginator.count }}</strong>
                 </small>
             </div>
             {% endif %}
@@ -153,7 +152,7 @@
                 <div class="card-footer">
                     <div class="d-flex justify-content-between">
                         <a href="{% url 'group_detail' group.pk %}" class="btn btn-sm btn-info">
-                            <i class="bi bi-eye"></i> Подробнее
+                            Подробнее
                         </a>
                         {% if user.groups.all.0.name == 'Заведующие' or user.is_superuser %}
                         <div>
@@ -205,12 +204,11 @@
 
     {% else %}
     <div class="alert alert-warning text-center">
-        <i class="bi bi-exclamation-triangle fs-1"></i>
         <h4 class="mt-3">Нет данных</h4>
         <p>В базе данных нет групп. Создайте первую группу.</p>
         {% if user.groups.all.0.name == 'Заведующие' or user.is_superuser %}
         <a href="{% url 'group_create' %}" class="btn btn-primary mt-2">
-            <i class="bi bi-plus-circle"></i> Создать группу
+            Создать группу
         </a>
         {% endif %}
     </div>

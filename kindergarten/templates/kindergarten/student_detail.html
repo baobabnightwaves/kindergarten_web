@@ -3,79 +3,163 @@
 {% block title %}Ученик: {{ student.student_fio }}{% endblock %}
 
 {% block content %}
-<h1>{{ student.student_fio }}</h1>
-
-<div style="display: flex; gap: 20px; margin-bottom: 30px;">
-    {% if user.groups.all.0.name == 'Заведующие' or user.is_superuser %}
-    <a href="{% url 'student_edit' student.pk %}" class="btn btn-warning">Редактировать</a>
-    <a href="{% url 'student_delete' student.pk %}" class="btn btn-danger">Удалить</a>
-    <a href="{% url 'student_list' %}" class="btn btn-secondary">Назад к списку</a>
-    {% elif user.groups.all.0.name == 'Родители' %}
-        <a href="{% url 'home' %}" class="btn btn-secondary">Назад</a>
-    {% endif %}
-</div>
-
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
-    <div>
-        <h2>Основная информация</h2>
-        <table class="info-table">
-            <tr><th>Дата рождения:</th><td>{{ student.student_birthday }}</td></tr>
-            <tr><th>Дата поступления:</th><td>{{ student.student_date_in }}</td></tr>
-            <tr><th>Дата выпуска:</th><td>{{ student.student_date_out|default:"-" }}</td></tr>
-            <tr><th>Группа:</th><td>{{ student.group.group_name }}</td></tr>
-            <tr><th>Возрастная категория:</th><td>{{ student.group.group_category }}</td></tr>
-            <tr><th>Воспитатель:</th><td>{{ student.group.teacher.teacher_fio }}</td></tr>
-        </table>
+<div class="container-fluid">
+    <!-- Заголовок страницы -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="mb-1">
+                {{ student.student_fio }}
+            </h1>
+            <p class="text-muted mb-0">
+                {{ student.age }} лет
+                {% if student.is_active %}
+                    <span class="badge bg-success ms-2">Активен</span>
+                {% else %}
+                    <span class="badge bg-warning">Выпущен</span>
+                {% endif %}
+            </p>
+        </div>
+        <div class="btn-group" role="group">
+            {% if user.groups.all.0.name == 'Заведующие' or user.is_superuser %}
+            <a href="{% url 'student_edit' student.pk %}" class="btn btn-warning">
+                Редактировать
+            </a>
+            <a href="{% url 'student_delete' student.pk %}" class="btn btn-danger">
+                Удалить
+            </a>
+            <a href="{% url 'student_list' %}" class="btn btn-secondary">
+                Назад к списку
+            </a>
+            {% elif user.groups.all.0.name == 'Родители' %}
+            <a href="{% url 'home' %}" class="btn btn-secondary">
+                Назад
+            </a>
+            {% endif %}
+        </div>
     </div>
-    
-    <div>
-        <h2>Родители</h2>
-        {% if parents %}
-        <table class="table table-striped table-hover">
-            <thead class="table-dark">
-                <tr>
-                    <th>ФИО</th>
-                    <th>Телефон</th>
-                    <th>Родство</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for rel in parents %}
-                <tr>
-                    <td>{{ rel.parent.parent_fio }}</td>
-                    <td>{{ rel.parent.parent_number }}</td>
-                    <td>{{ rel.relationship_type }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <p>Родители не указаны</p>
-        {% endif %}
+
+    <div class="row g-4">
+        <!-- Основная информация -->
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Основная информация</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-5">Дата рождения:</dt>
+                        <dd class="col-sm-7">{{ student.student_birthday|date:"d.m.Y" }}</dd>
+                        
+                        <dt class="col-sm-5">Пол:</dt>
+                        <dd class="col-sm-7">{{ student.get_student_gender_display }}</dd>
+                        
+                        <dt class="col-sm-5">Дата поступления:</dt>
+                        <dd class="col-sm-7">{{ student.student_date_in|date:"d.m.Y" }}</dd>
+                        
+                        <dt class="col-sm-5">Дата выпуска:</dt>
+                        <dd class="col-sm-7">{{ student.student_date_out|date:"d.m.Y"|default:"—" }}</dd>
+                        
+                        <dt class="col-sm-5">Группа:</dt>
+                        <dd class="col-sm-7">
+                            <a href="{% url 'group_detail' student.group.pk %}" class="text-decoration-none">
+                                <span class="badge bg-info">{{ student.group.group_name }}</span>
+                            </a>
+                        </dd>
+                        
+                        <dt class="col-sm-5">Категория:</dt>
+                        <dd class="col-sm-7">{{ student.group.group_category }}</dd>
+                        
+                        <dt class="col-sm-5">Воспитатель:</dt>
+                        <dd class="col-sm-7">{{ student.group.teacher.teacher_fio|default:"—" }}</dd>
+                        
+                        {% if student.student_address %}
+                        <dt class="col-sm-5">Адрес:</dt>
+                        <dd class="col-sm-7">{{ student.student_address }}</dd>
+                        {% endif %}
+                    </dl>
+                </div>
+            </div>
+        </div>
         
-        <h2 style="margin-top: 30px;">Посещаемость (последние 10 записей)</h2>
-        {% if attendance %}
-        <table>
-            <tr>
-                <th>Дата</th>
-                <th>Статус</th>
-            </tr>
-            {% for att in attendance %}
-            <tr>
-                <td>{{ att.attendance_date }}</td>
-                <td>
-                    {% if att.attendance_status %}
-                    <span style="color: green;">Присутствовал</span>
+        <!-- Родители -->
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Родители</h5>
+                </div>
+                <div class="card-body">
+                    {% if parents %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>ФИО</th>
+                                    <th>Телефон</th>
+                                    <th>Родство</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for rel in parents %}
+                                <tr>
+                                    <td>{{ rel.parent.parent_fio }}</td>
+                                    <td>{{ rel.parent.parent_number }}</td>
+                                    <td><span class="badge bg-light text-dark">{{ rel.relationship_type }}</span></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                     {% else %}
-                    <span style="color: red;">Отсутствовал</span>
+                    <div class="alert alert-info mb-0">
+                        Родители не указаны
+                    </div>
                     {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </table>
-        {% else %}
-        <p>Нет записей о посещаемости</p>
-        {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Посещаемость -->
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning">
+                    <h5 class="mb-0">Посещаемость (последние 10 записей)</h5>
+                </div>
+                <div class="card-body">
+                    {% if attendance %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Дата</th>
+                                    <th>Статус</th>
+                                    <th>Причина</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for att in attendance %}
+                                <tr>
+                                    <td>{{ att.attendance_date|date:"d.m.Y" }}</td>
+                                    <td>
+                                        {% if att.status %}
+                                        <span class="badge bg-success">Присутствовал</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">Отсутствовал</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ att.reason|default:"—" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info mb-0">
+                        Нет записей о посещаемости
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}

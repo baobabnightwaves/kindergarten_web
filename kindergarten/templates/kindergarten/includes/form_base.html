@@ -1,0 +1,198 @@
+<!-- Компактный минималистичный стиль форм с зеленой цветовой гаммой -->
+<style>
+/* Базовые стили форм */
+.form-container {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+.form-card {
+    border: none;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border-radius: 8px;
+}
+
+.form-header {
+    background: #28a745;
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: 8px 8px 0 0;
+}
+
+.form-header h4 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+.form-body {
+    padding: 1.5rem;
+}
+
+.form-group-compact {
+    margin-bottom: 1rem;
+}
+
+.form-label-compact {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #495057;
+    margin-bottom: 0.3rem;
+    display: block;
+}
+
+.form-control-compact {
+    font-size: 0.9rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.form-control-compact:focus {
+    border-color: #28a745;
+    box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.1);
+    outline: none;
+}
+
+.form-body > form > div:not(.btn-actions),
+.form-body > form > .row {
+    margin-bottom: 1rem;
+}
+
+.form-body label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #495057;
+    margin-bottom: 0.3rem;
+    display: block;
+}
+
+.form-body input[type="text"],
+.form-body input[type="date"],
+.form-body input[type="email"],
+.form-body input[type="tel"],
+.form-body input[type="number"],
+.form-body input[type="password"],
+.form-body select,
+.form-body textarea {
+    font-size: 0.9rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    width: 100%;
+    transition: border-color 0.15s;
+}
+
+.form-body input:focus,
+.form-body select:focus,
+.form-body textarea:focus {
+    border-color: #28a745;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.1);
+}
+
+.btn-compact {
+    padding: 0.5rem 1.5rem;
+    font-size: 0.9rem;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.btn-actions {
+    padding-top: 1.5rem;
+    margin-top: 1.5rem;
+    border-top: 1px solid #e9ecef;
+    display: flex;
+    gap: 0.75rem;
+}
+
+.row-compact {
+    margin-left: -0.5rem;
+    margin-right: -0.5rem;
+}
+
+.row-compact > [class*='col-'] {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+}
+
+.error-text {
+    font-size: 0.8rem;
+    color: #dc3545;
+    margin-top: 0.25rem;
+}
+
+/* Связи (для родителей/учеников) */
+.relations-list {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    padding: 0.75rem;
+    max-height: 200px;
+    overflow-y: auto;
+    margin-top: 0.5rem;
+}
+
+.relation-item {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+}
+
+.relation-item:last-child {
+    margin-bottom: 0;
+}
+
+.btn-remove-relation {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+}
+
+/* Info cards для страниц связей */
+.info-card {
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.info-card .card-header {
+    background: #e9ecef;
+    padding: 0.75rem 1rem;
+}
+
+.info-card .card-header h5 {
+    font-size: 1rem;
+    margin: 0;
+}
+
+.info-card .card-body {
+    padding: 1rem;
+}
+
+.info-card .table {
+    font-size: 0.85rem;
+    margin-bottom: 0;
+}
+
+.info-card .table th {
+    width: 35%;
+    font-weight: 500;
+}
+
+.info-card h6 {
+    font-size: 0.9rem;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.info-card .list-group-item {
+    padding: 0.5rem 0;
+    font-size: 0.85rem;
+}
+</style>

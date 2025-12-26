@@ -4,12 +4,12 @@
 
 {% block content %}
 <div class="container-fluid">
-    <h1><i class="bi bi-person-badge-fill"></i> Список воспитателей</h1>
+    <h1>Список воспитателей</h1>
     
     {% if user.groups.all.0.name == 'Заведующие' or user.is_superuser %}
     <div class="mb-4">
         <a href="{% url 'teacher_create' %}" class="btn btn-primary">
-            <i class="bi bi-person-plus"></i> Добавить воспитателя
+            Добавить воспитателя
         </a>
     </div>
     {% endif %}
@@ -50,7 +50,7 @@
                 
                 <div class="col-md-2 d-flex align-items-end">
                     <button type="submit" class="btn btn-primary w-100">
-                        <i class="bi bi-search"></i> Поиск
+                        Поиск
                     </button>
                 </div>
             </form>
@@ -66,7 +66,7 @@
                     | Должность: {{ request.GET.position }}
                     {% endif %}
                     <a href="{% url 'teacher_list' %}" class="ms-2">
-                        <i class="bi bi-x-circle"></i> Сбросить фильтры
+                        Сбросить фильтры
                     </a>
                 </small>
             </div>
@@ -85,6 +85,7 @@
                             <th>ФИО</th>
                             <th>Должность</th>
                             <th>Телефон</th>
+                            <th>Количество групп</th>
                             <th>Действия</th>
                         </tr>
                     </thead>
@@ -100,6 +101,9 @@
                                 <span class="badge bg-info">{{ teacher.teacher_position }}</span>
                             </td>
                             <td>{{ teacher.teacher_number }}</td>
+                            <td>
+                                <span class="badge bg-primary">{{ teacher.groups_count }}</span>
+                            </td>
                             <td>
                                 <div class="btn-group btn-group-sm" role="group">
                                     {% if user.groups.all.0.name == 'Заведующие' or user.is_superuser %}
@@ -155,7 +159,6 @@
 
             {% else %}
             <div class="alert alert-info text-center">
-                <i class="bi bi-info-circle fs-1"></i>
                 <h4 class="mt-3">Нет данных</h4>
                 <p>В базе данных нет воспитателей.</p>
             </div>

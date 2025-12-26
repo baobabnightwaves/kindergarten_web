@@ -4,12 +4,12 @@
 
 {% block content %}
 <div class="container-fluid">
-    <h1><i class="bi bi-people-fill"></i> Список родителей</h1>
+    <h1>Список родителей</h1>
     
     {% if user.groups.all.0.name == 'Заведующие' or user.is_superuser %}
     <div class="mb-4">
         <a href="{% url 'parent_create' %}" class="btn btn-primary">
-            <i class="bi bi-person-plus"></i> Добавить родителя
+            Добавить родителя
         </a>
     </div>
     {% endif %}
@@ -38,7 +38,7 @@
                 
                 <div class="col-md-2 d-flex align-items-end">
                     <button type="submit" class="btn btn-primary w-100">
-                        <i class="bi bi-search"></i> Поиск
+                        Поиск
                     </button>
                 </div>
             </form>
@@ -51,7 +51,7 @@
                     | Поиск: "{{ request.GET.search }}"
                     {% endif %}
                     <a href="{% url 'parent_list' %}" class="ms-2">
-                        <i class="bi bi-x-circle"></i> Сбросить фильтры
+                        Сбросить фильтры
                     </a>
                 </small>
             </div>
@@ -142,7 +142,6 @@
 
             {% else %}
             <div class="alert alert-info text-center">
-                <i class="bi bi-info-circle fs-1"></i>
                 <h4 class="mt-3">Нет данных</h4>
                 <p>В базе данных нет родителей. Добавьте первого родителя.</p>
             </div>

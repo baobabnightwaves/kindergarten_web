@@ -1,0 +1,108 @@
+{% extends 'kindergarten/base.html' %}
+{% load static %}
+
+{% block title %}Список учеников с родителями{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-users"></i> Список учеников с родителями</h2>
+        <a href="?format=csv" class="btn btn-success">
+            <i class="fas fa-file-csv"></i> Экспорт в CSV
+        </a>
+    </div>
+    <hr>
+
+    {% if report_data %}
+        <!-- Информация о воспитателе -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-user-tie"></i> Воспитатель: {{ report_data.teacher.fio }}</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-0"><strong>Должность:</strong> {{ report_data.teacher.position }}</p>
+            </div>
+        </div>
+
+        <!-- Отчет по группам -->
+        {% for group_data in report_data.groups_data %}
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-users"></i> {{ group_data.group_name }} - {{ group_data.group_category }}
+                        <span class="badge bg-light text-dark float-end">{{ group_data.students|length }} учеников</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if group_data.students %}
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>ФИО ученика</th>
+                                        <th>Дата рождения</th>
+                                        <th>Возраст</th>
+                                        <th>Дата поступления</th>
+                                        <th>Родители</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for student in group_data.students %}
+                                        <tr>
+                                            <td>{{ forloop.counter }}</td>
+                                            <td>
+                                                <strong>{{ student.fio }}</strong>
+                                            </td>
+                                            <td>{{ student.birthday }}</td>
+                                            <td>{{ student.age }} лет</td>
+                                            <td>{{ student.date_in }}</td>
+                                            <td>
+                                                {% if student.parents %}
+                                                    <ul class="list-unstyled mb-0">
+                                                        {% for parent in student.parents %}
+                                                            <li class="mb-2">
+                                                                <strong>{{ parent.fio }}</strong> ({{ parent.relationship }})<br>
+                                                                <small>
+                                                                    <i class="fas fa-phone"></i> {{ parent.phone|default:"Не указан" }}
+                                                                </small>
+                                                            </li>
+                                                        {% endfor %}
+                                                    </ul>
+                                                {% else %}
+                                                    <span class="text-muted">Нет данных</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> В группе нет учеников
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+
+        {% if not report_data.groups_data %}
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle"></i> У вас нет назначенных групп
+            </div>
+        {% endif %}
+
+    {% else %}
+        <div class="alert alert-danger">
+            <i class="fas fa-exclamation-circle"></i> Ошибка при загрузке данных
+        </div>
+    {% endif %}
+
+    <div class="mt-4">
+        <a href="{% url 'reports_selector' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Назад к выбору отчета
+        </a>
+    </div>
+</div>
+{% endblock %}

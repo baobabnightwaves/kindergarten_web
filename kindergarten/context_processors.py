@@ -1,7 +1,5 @@
 from .decorators import get_user_role
-
 def user_role(request):
-    """Контекстный процессор для определения роли пользователя"""
     if not request.user.is_authenticated:
         return {
             'user_role': None,
@@ -10,9 +8,7 @@ def user_role(request):
             'is_director': False,
             'is_superuser': False,
         }
-    
     role = get_user_role(request.user)
-    
     return {
         'user_role': role,
         'is_parent': role == 'parent',
@@ -20,15 +16,10 @@ def user_role(request):
         'is_director': role == 'director',
         'is_superuser': role == 'superuser',
     }
-
 def navigation(request):
-    """Контекстный процессор для навигации с учетом роли"""
     if not request.user.is_authenticated:
         return {'nav_sections': []}
-    
     role = get_user_role(request.user)
-    
-    # Родитель - только свои дети и отчеты
     if role == 'parent':
         return {
             'nav_sections': [
@@ -41,13 +32,11 @@ def navigation(request):
                 {
                     'name': 'Отчеты',
                     'items': [
-                        {'name': 'Мои отчеты', 'url': 'reports_dashboard'},
+                        {'name': 'Отчеты', 'url': 'parent_reports'},
                     ]
                 },
             ]
         }
-    
-    # Воспитатель - ученики своих групп, родители, посещаемость, отчеты
     elif role == 'teacher':
         return {
             'nav_sections': [
@@ -73,8 +62,6 @@ def navigation(request):
                 },
             ]
         }
-    
-    # Директор и суперпользователь - доступ ко всему кроме управления пользователями (для директора)
     elif role in ['director', 'superuser']:
         nav_sections = [
             {
@@ -99,8 +86,6 @@ def navigation(request):
                 ]
             },
         ]
-        
-        # Только суперпользователь имеет доступ к управлению пользователями
         if role == 'superuser':
             nav_sections.append({
                 'name': 'Администрирование',
@@ -108,7 +93,5 @@ def navigation(request):
                     {'name': 'Пользователи', 'url': 'user_management'},
                 ]
             })
-        
         return {'nav_sections': nav_sections}
-    
     return {'nav_sections': []}

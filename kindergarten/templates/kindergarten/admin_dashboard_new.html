@@ -1,0 +1,286 @@
+{% extends 'kindergarten/base.html' %}
+{% load static %}
+
+{% block title %}Административный дашборд{% endblock %}
+
+{% block extra_css %}
+<style>
+.metric-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    margin-bottom: 1rem;
+}
+.metric-value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #28a745;
+}
+.metric-label {
+    font-size: 0.9rem;
+    color: #6c757d;
+    margin-top: 0.5rem;
+}
+.chart-container {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    margin-bottom: 1rem;
+}
+.chart-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: #495057;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid" style="padding: 1rem;">
+    <h2 style="margin-bottom: 1.5rem;">Административный дашборд</h2>
+    
+    <div class="row mb-3">
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div class="metric-value">{{ dashboard_data.key_metrics.total_students }}</div>
+                <div class="metric-label">Всего учеников</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div class="metric-value">{{ dashboard_data.key_metrics.total_groups }}</div>
+                <div class="metric-label">Всего групп</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div class="metric-value">{{ dashboard_data.key_metrics.total_teachers }}</div>
+                <div class="metric-label">Воспитателей</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div class="metric-value">{{ dashboard_data.key_metrics.today_percentage }}%</div>
+                <div class="metric-label">Посещаемость сегодня</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="chart-container">
+                <div class="chart-title">1. Динамика посещаемости за 30 дней</div>
+                <canvas id="attendanceTrendChart" height="100"></canvas>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="chart-container">
+                <div class="chart-title">2. Распределение по возрастам</div>
+                <canvas id="ageDistributionChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="chart-container">
+                <div class="chart-title">3. Наполняемость групп (%)</div>
+                <canvas id="groupsFillChart" height="120"></canvas>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="chart-container">
+                <div class="chart-title">4. Поступления по месяцам</div>
+                <canvas id="enrollmentsChart" height="120"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="chart-container">
+                <div class="chart-title">5. Посещаемость по группам (сегодня)</div>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Группа</th>
+                                <th>Воспитатель</th>
+                                <th>Присутствует</th>
+                                <th>Отсутствует</th>
+                                <th>Всего</th>
+                                <th>Посещаемость</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for group in dashboard_data.groups_today_attendance %}
+                            <tr>
+                                <td><a href="{% url 'admin_group_report' %}?group_id={{ group.group_id }}">{{ group.group_name }}</a></td>
+                                <td>{{ group.teacher }}</td>
+                                <td><span class="badge bg-success">{{ group.present }}</span></td>
+                                <td><span class="badge bg-danger">{{ group.absent }}</span></td>
+                                <td>{{ group.total }}</td>
+                                <td>
+                                    <div class="progress" style="height: 20px; min-width: 80px;">
+                                        <div class="progress-bar {% if group.percentage < 70 %}bg-danger{% elif group.percentage < 85 %}bg-warning{% else %}bg-success{% endif %}" 
+                                             style="width: {{ group.percentage }}%">
+                                            {{ group.percentage }}%
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted">Нет данных о посещаемости на сегодня</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="chart-container">
+                <div class="chart-title">6. Статистика по наполняемости групп</div>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Группа</th>
+                                <th>Учеников</th>
+                                <th>Вместимость</th>
+                                <th>Заполненность</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for group in dashboard_data.groups_fill %}
+                            <tr>
+                                <td>{{ group.group_name }}</td>
+                                <td>{{ group.students_count }}</td>
+                                <td>{{ group.max_capacity }}</td>
+                                <td>
+                                    <div class="progress" style="height: 20px; min-width: 150px;">
+                                        <div class="progress-bar {% if group.fill_percentage > 90 %}bg-danger{% elif group.fill_percentage > 75 %}bg-warning{% else %}bg-success{% endif %}" 
+                                             style="width: {{ group.fill_percentage }}%">
+                                            {{ group.fill_percentage }}%
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">Нет данных о группах</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const attendanceTrendCtx = document.getElementById('attendanceTrendChart').getContext('2d');
+new Chart(attendanceTrendCtx, {
+    type: 'line',
+    data: {
+        labels: {{ dashboard_data.attendance_trend_30days.labels|safe }},
+        datasets: [{
+            label: 'Посещаемость (%)',
+            data: {{ dashboard_data.attendance_trend_30days.data|safe }},
+            borderColor: '#28a745',
+            backgroundColor: 'rgba(40, 167, 69, 0.1)',
+            tension: 0.4,
+            fill: true
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: { display: true }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                max: 100,
+                ticks: { callback: value => value + '%' }
+            }
+        }
+    }
+});
+
+const ageDistributionCtx = document.getElementById('ageDistributionChart').getContext('2d');
+new Chart(ageDistributionCtx, {
+    type: 'doughnut',
+    data: {
+        labels: [{% for item in dashboard_data.age_distribution %}'{{ item.category }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+        datasets: [{
+            data: [{% for item in dashboard_data.age_distribution %}{{ item.count }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+            backgroundColor: ['#28a745', '#20c997', '#17a2b8', '#ffc107', '#dc3545']
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: { position: 'bottom' }
+        }
+    }
+});
+
+const groupsFillCtx = document.getElementById('groupsFillChart').getContext('2d');
+new Chart(groupsFillCtx, {
+    type: 'bar',
+    data: {
+        labels: [{% for group in dashboard_data.groups_fill %}'{{ group.group_name }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+        datasets: [{
+            label: 'Заполненность (%)',
+            data: [{% for group in dashboard_data.groups_fill %}{{ group.fill_percentage }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+            backgroundColor: '#20c997'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        scales: {
+            y: {
+                beginAtZero: true,
+                max: 100,
+                ticks: { callback: value => value + '%' }
+            }
+        }
+    }
+});
+
+const enrollmentsCtx = document.getElementById('enrollmentsChart').getContext('2d');
+new Chart(enrollmentsCtx, {
+    type: 'bar',
+    data: {
+        labels: [{% for item in dashboard_data.enrollments_by_month %}'{{ item.month }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+        datasets: [{
+            label: 'Поступления',
+            data: [{% for item in dashboard_data.enrollments_by_month %}{{ item.count }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+            backgroundColor: '#17a2b8'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        scales: {
+            y: { beginAtZero: true }
+        }
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,390 @@
+{% extends 'kindergarten/base.html' %}
+{% load static %}
+
+{% block title %}Отчет по группе{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-file-alt"></i> Детальный отчет по группе</h2>
+        {% if report_data %}
+            <a href="?group_id={{ selected_group_id }}&format=csv" class="btn btn-success">
+                <i class="fas fa-file-csv"></i> Экспорт в CSV
+            </a>
+        {% endif %}
+    </div>
+    <hr>
+
+    <!-- Выбор группы -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-users"></i> Выберите группу</h5>
+        </div>
+        <div class="card-body">
+            <form method="get" action="{% url 'admin_group_report' %}">
+                <div class="row">
+                    <div class="col-md-8">
+                        <select name="group_id" class="form-control" required onchange="this.form.submit()">
+                            <option value="">-- Выберите группу --</option>
+                            {% for group in groups %}
+                                <option value="{{ group.group_id }}" {% if selected_group_id == group.group_id %}selected{% endif %}>
+                                    {{ group.group_name }} - {{ group.get_group_category_display }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search"></i> Показать отчет
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if report_data %}
+        <!-- Информация о группе -->
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-info-circle"></i> Информация о группе</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <strong>Название:</strong><br>
+                        <h4>{{ report_data.group_info.name }}</h4>
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Категория:</strong><br>
+                        <span class="badge bg-primary p-2">{{ report_data.group_info.category }}</span>
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Воспитатель:</strong><br>
+                        {{ report_data.group_info.teacher.fio }}<br>
+                        <small class="text-muted">{{ report_data.group_info.teacher.position }}</small>
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Вместимость:</strong><br>
+                        {{ report_data.statistics.total_students }} / {{ report_data.group_info.max_capacity }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Статистика группы -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card text-center bg-primary text-white">
+                    <div class="card-body">
+                        <i class="fas fa-users fa-3x mb-2"></i>
+                        <h3>{{ report_data.statistics.total_students }}</h3>
+                        <p class="mb-0">Всего учеников</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center bg-info text-white">
+                    <div class="card-body">
+                        <i class="fas fa-chart-pie fa-3x mb-2"></i>
+                        <h3>{{ report_data.statistics.fill_percentage }}%</h3>
+                        <p class="mb-0">Заполненность</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center bg-success text-white">
+                    <div class="card-body">
+                        <i class="fas fa-percentage fa-3x mb-2"></i>
+                        <h3>{{ report_data.statistics.avg_attendance_percentage }}%</h3>
+                        <p class="mb-0">Средняя посещаемость</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center bg-warning text-dark">
+                    <div class="card-body">
+                        <i class="fas fa-calendar-check fa-3x mb-2"></i>
+                        <h3>{{ report_data.statistics.avg_attendance_present }} / {{ report_data.statistics.avg_attendance_total }}</h3>
+                        <p class="mb-0">Присутствий / Всего</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- График посещаемости за 30 дней -->
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-chart-line"></i> График посещаемости группы (последние 30 дней)</h5>
+            </div>
+            <div class="card-body">
+                {% if report_data.chart_data.labels %}
+                    <!-- График количества учеников -->
+                    <div class="mb-4">
+                        <h6 class="text-center mb-3">Количество присутствующих и отсутствующих учеников</h6>
+                        <canvas id="groupAttendanceChart" height="80"></canvas>
+                    </div>
+                    
+                    <!-- График процента посещаемости -->
+                    <div class="mt-4">
+                        <h6 class="text-center mb-3">Процент посещаемости группы</h6>
+                        <canvas id="groupAttendancePercentageChart" height="60"></canvas>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> Нет данных для отображения графика
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Список учеников с родителями и посещаемостью -->
+        <div class="card mb-4">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0"><i class="fas fa-list"></i> Список учеников с родителями и посещаемостью</h5>
+            </div>
+            <div class="card-body">
+                {% if report_data.students %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>#</th>
+                                    <th>ФИО ученика</th>
+                                    <th>Дата рождения</th>
+                                    <th>Возраст</th>
+                                    <th>Дата поступления</th>
+                                    <th>Посещаемость (месяц)</th>
+                                    <th>Родители</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for student in report_data.students %}
+                                    <tr>
+                                        <td>{{ forloop.counter }}</td>
+                                        <td><strong>{{ student.fio }}</strong></td>
+                                        <td>{{ student.birthday }}</td>
+                                        <td>{{ student.age }} лет</td>
+                                        <td>{{ student.date_in }}</td>
+                                        <td>
+                                            <div class="mb-2">
+                                                <div class="progress" style="height: 25px;">
+                                                    <div class="progress-bar 
+                                                        {% if student.attendance.percentage >= 80 %}bg-success
+                                                        {% elif student.attendance.percentage >= 60 %}bg-warning
+                                                        {% else %}bg-danger
+                                                        {% endif %}" 
+                                                        role="progressbar" 
+                                                        style="width: {{ student.attendance.percentage }}%"
+                                                        aria-valuenow="{{ student.attendance.percentage }}" 
+                                                        aria-valuemin="0" 
+                                                        aria-valuemax="100">
+                                                        {{ student.attendance.percentage }}%
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <small class="text-muted">
+                                                Присутствовал: {{ student.attendance.present }} / 
+                                                Отсутствовал: {{ student.attendance.absent }}
+                                            </small>
+                                        </td>
+                                        <td>
+                                            {% if student.parents %}
+                                                <ul class="list-unstyled mb-0">
+                                                    {% for parent in student.parents %}
+                                                        <li class="mb-2">
+                                                            <strong>{{ parent.fio }}</strong> ({{ parent.relationship }})<br>
+                                                            <small>
+                                                                <i class="fas fa-phone"></i> {{ parent.phone|default:"—" }}
+                                                            </small>
+                                                        </li>
+                                                    {% endfor %}
+                                                </ul>
+                                            {% else %}
+                                                <span class="text-muted">Нет данных</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <a href="{% url 'student_individual_report' student.id %}" 
+                                               class="btn btn-sm btn-info" 
+                                               title="Индивидуальный отчет">
+                                                <i class="fas fa-chart-bar"></i> Отчет
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> В группе нет учеников
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+    {% endif %}
+
+    <div class="mt-4">
+        <a href="{% url 'reports_selector' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Назад к выбору отчета
+        </a>
+    </div>
+</div>
+
+{% if report_data and report_data.chart_data.labels %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // График 1: Количество учеников (присутствовали/отсутствовали)
+    const ctx1 = document.getElementById('groupAttendanceChart');
+    
+    const chartData1 = {
+        labels: {{ report_data.chart_data.labels|safe }},
+        datasets: [
+            {
+                label: 'Присутствовали',
+                data: {{ report_data.chart_data.present|safe }},
+                backgroundColor: 'rgba(40, 167, 69, 0.7)',
+                borderColor: 'rgba(40, 167, 69, 1)',
+                borderWidth: 2
+            },
+            {
+                label: 'Отсутствовали',
+                data: {{ report_data.chart_data.absent|safe }},
+                backgroundColor: 'rgba(220, 53, 69, 0.7)',
+                borderColor: 'rgba(220, 53, 69, 1)',
+                borderWidth: 2
+            }
+        ]
+    };
+
+    const config1 = {
+        type: 'bar',
+        data: chartData1,
+        options: {
+            responsive: true,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Количество учеников'
+                    },
+                    ticks: {
+                        stepSize: 1
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Дата'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                },
+                tooltip: {
+                    callbacks: {
+                        footer: function(tooltipItems) {
+                            let total = 0;
+                            tooltipItems.forEach(function(tooltipItem) {
+                                total += tooltipItem.parsed.y;
+                            });
+                            return 'Всего: ' + total + ' учеников';
+                        }
+                    }
+                }
+            }
+        }
+    };
+
+    new Chart(ctx1, config1);
+
+    // График 2: Процент посещаемости
+    const ctx2 = document.getElementById('groupAttendancePercentageChart');
+    
+    const chartData2 = {
+        labels: {{ report_data.chart_data.labels|safe }},
+        datasets: [
+            {
+                label: 'Процент посещаемости',
+                data: {{ report_data.chart_data.percentage|safe }},
+                backgroundColor: 'rgba(0, 123, 255, 0.2)',
+                borderColor: 'rgba(0, 123, 255, 1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4
+            }
+        ]
+    };
+
+    const config2 = {
+        type: 'line',
+        data: chartData2,
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            layout: {
+                padding: {
+                    top: 20,
+                    bottom: 10
+                }
+            },
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    grace: '5%',
+                    title: {
+                        display: true,
+                        text: 'Посещаемость (%)'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Дата'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': ' + context.parsed.y.toFixed(1) + '%';
+                        }
+                    }
+                }
+            }
+        }
+    };
+
+    new Chart(ctx2, config2);
+});
+</script>
+{% endif %}
+
+{% endblock %}

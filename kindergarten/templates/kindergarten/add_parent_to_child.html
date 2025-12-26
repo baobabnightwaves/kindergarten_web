@@ -2,113 +2,156 @@
 
 {% block title %}{{ title }}{% endblock %}
 
+{% block extra_css %}
+<style>
+.form-card { border: none; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-radius: 8px; }
+.form-header { background: #28a745; color: white; padding: 1rem 1.5rem; border-radius: 8px 8px 0 0; }
+.form-header h4 { margin: 0; font-size: 1.1rem; font-weight: 500; }
+.form-body { padding: 1.5rem; }
+.form-body > form > div:not(.btn-actions), .form-body > form > .row { margin-bottom: 1rem; }
+.form-body label { font-size: 0.9rem; font-weight: 500; color: #495057; margin-bottom: 0.3rem; display: block; }
+.form-body input[type="text"], .form-body input[type="date"], .form-body input[type="email"], .form-body input[type="tel"], .form-body input[type="number"], .form-body input[type="password"], .form-body select, .form-body textarea { font-size: 0.9rem; padding: 0.5rem 0.75rem; border: 1px solid #ced4da; border-radius: 4px; width: 100%; transition: border-color 0.15s; }
+.form-body input:focus, .form-body select:focus, .form-body textarea:focus { border-color: #28a745; outline: none; box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.1); }
+.btn-compact { padding: 0.5rem 1.5rem; font-size: 0.9rem; border-radius: 4px; font-weight: 500; }
+.btn-actions { padding-top: 1.5rem; margin-top: 1.5rem; border-top: 1px solid #e9ecef; display: flex; gap: 0.75rem; }
+.row-compact { margin-left: -0.5rem; margin-right: -0.5rem; }
+.row-compact > [class*='col-'] { padding-left: 0.5rem; padding-right: 0.5rem; }
+.error-text { font-size: 0.8rem; color: #dc3545; margin-top: 0.25rem; }
+.info-card { box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.info-card .card-header { background: #e9ecef; padding: 0.75rem 1rem; }
+.info-card .card-header h5 { font-size: 1rem; margin: 0; }
+.info-card .card-body { padding: 1rem; }
+.info-card .table { font-size: 0.85rem; margin-bottom: 0; }
+.info-card .table th { width: 35%; font-weight: 500; }
+.info-card h6 { font-size: 0.9rem; margin-top: 1rem; margin-bottom: 0.5rem; }
+.info-card .list-group-item { padding: 0.5rem 0; font-size: 0.85rem; }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="row">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">
-                <h4 class="mb-0">{{ title }}</h4>
-            </div>
-            <div class="card-body">
-                <form method="post">
-                    {% csrf_token %}
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Родитель:</label>
-                        <input type="text" class="form-control" value="{{ parent.parent_fio }}" readonly>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="{{ form.student.id_for_label }}" class="form-label">
-                            Выберите ребенка *
-                        </label>
-                        {{ form.student }}
-                        {% if form.student.errors %}
-                        <div class="text-danger small">{{ form.student.errors }}</div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.relationship_type.id_for_label }}" class="form-label">
-                                    Степень родства *
-                                </label>
-                                {{ form.relationship_type }}
-                                {% if form.relationship_type.errors %}
-                                <div class="text-danger small">{{ form.relationship_type.errors }}</div>
-                                {% endif %}
-                            </div>
+<div class="container-fluid" style="padding: 1rem;">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card form-card">
+                <div class="form-header">
+                    <h4>{{ title }}</h4>
+                </div>
+                <div class="form-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div>
+                            <label>Ученик</label>
+                            <input type="text" class="form-control" value="{{ student.student_fio }}" readonly>
+                        </div>
+                            
+                        <div>
+                            <label for="{{ form.parent.id_for_label }}">Выберите родителя</label>
+                            {{ form.parent }}
+                            {% if form.parent.errors %}
+                            <div class="error-text">{{ form.parent.errors }}</div>
+                            {% endif %}
                         </div>
                         
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <div class="form-check mt-4">
+                        <div class="row row-compact">
+                            <div class="col-md-7">
+                                <div>
+                                    <label for="{{ form.relationship_type.id_for_label }}">Степень родства</label>
+                                    {{ form.relationship_type }}
+                                    {% if form.relationship_type.errors %}
+                                    <div class="error-text">{{ form.relationship_type.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-5">
+                                <div class="form-check" style="margin-top: 1.9rem;">
                                     {{ form.is_primary }}
-                                    <label class="form-check-label" for="{{ form.is_primary.id_for_label }}">
+                                    <label class="form-check-label" for="{{ form.is_primary.id_for_label }}" style="font-size: 0.9rem;">
                                         Основной контакт
                                     </label>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-link"></i> Связать
-                        </button>
-                        <a href="{% url 'parent_detail' parent.pk %}" class="btn btn-secondary">
-                            <i class="bi bi-x-circle"></i> Отмена
-                        </a>
-                    </div>
-                </form>
+                        
+                        <div class="btn-actions">
+                            <button type="submit" class="btn btn-success btn-compact">
+                                Связать
+                            </button>
+                            <a href="{% url 'student_detail' student.pk %}" class="btn btn-secondary btn-compact">
+                                Отмена
+                            </a>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
-    </div>
-    
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Информация о родителе</h5>
-            </div>
-            <div class="card-body">
-                <table class="table table-sm">
-                    <tr>
-                        <th>ФИО:</th>
-                        <td>{{ parent.parent_fio }}</td>
-                    </tr>
-                    <tr>
-                        <th>Телефон:</th>
-                        <td>{{ parent.parent_number }}</td>
-                    </tr>
-                    <tr>
-                        <th>Детей:</th>
-                        <td>{{ parent.studentparent_set.count }}</td>
-                    </tr>
-                </table>
-                
-                <h6 class="mt-3">Уже связанные дети:</h6>
-                <ul class="list-group list-group-flush">
-                    {% for relation in parent.studentparent_set.all %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <span>
-                            {{ relation.student.student_fio }}
-                            <small class="text-muted">({{ relation.relationship_type }})</small>
-                        </span>
-                        <form method="post" action="{% url 'remove_parent_child_relation' relation.pk %}" 
-                              class="d-inline" onsubmit="return confirm('Удалить связь?');">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-sm btn-danger">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </form>
-                    </li>
-                    {% empty %}
-                    <li class="list-group-item text-muted">Нет связанных детей</li>
-                    {% endfor %}
-                </ul>
+        
+        <div class="col-lg-4">
+            <div class="card info-card">
+                <div class="card-header">
+                    <h5>Информация об ученике</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm table-borderless">
+                        <tr>
+                            <th>ФИО:</th>
+                            <td>{{ student.student_fio }}</td>
+                        </tr>
+                        <tr>
+                            <th>Возраст:</th>
+                            <td>{{ student.age }} лет</td>
+                        </tr>
+                        <tr>
+                            <th>Группа:</th>
+                            <td>{{ student.group.group_name|default:"Не назначена" }}</td>
+                        </tr>
+                        <tr>
+                            <th>Родителей:</th>
+                            <td>{{ student.studentparent_set.count }}</td>
+                        </tr>
+                    </table>
+                    
+                    <h6>Связанные родители:</h6>
+                    <ul class="list-group list-group-flush">
+                        {% for relation in student.studentparent_set.all %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <span>
+                                <strong>{{ relation.parent.parent_fio }}</strong>
+                                <br>
+                                <small class="text-muted">
+                                    {{ relation.relationship_type }}
+                                    {% if relation.is_primary %}<span class="badge bg-success">Основной</span>{% endif %}
+                                </small>
+                            </span>
+                            <form method="post" action="{% url 'remove_parent_child_relation' relation.pk %}" 
+                                  class="d-inline" onsubmit="return confirm('Удалить связь?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-danger" style="padding: 0.15rem 0.4rem; font-size: 0.75rem;">
+                                    ×
+                                </button>
+                            </form>
+                        </li>
+                        {% empty %}
+                        <li class="list-group-item text-muted px-0">Нет связанных родителей</li>
+                        {% endfor %}
+                    </ul>
+                </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selects = document.querySelectorAll('select');
+    selects.forEach(select => {
+        if (!select.classList.contains('form-control-compact')) {
+            select.classList.add('form-control', 'form-control-compact');
+        }
+    });
+});
+</script>
 {% endblock %}

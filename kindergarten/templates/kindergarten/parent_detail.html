@@ -3,58 +3,122 @@
 {% block title %}Родитель: {{ parent.parent_fio }}{% endblock %}
 
 {% block content %}
-<h1>Родитель: {{ parent.parent_fio }}</h1>
-
-<div class="action-buttons mb-4">
-    <a href="{% url 'parent_list' %}" class="btn btn-secondary">
-        <i class="bi bi-arrow-left"></i> Назад к списку
-    </a>
-</div>
-
-<div class="row">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Основная информация</h5>
-            </div>
-            <div class="card-body">
-                <table class="table table-borderless">
-                    <tr>
-                        <th>ФИО:</th>
-                        <td>{{ parent.parent_fio }}</td>
-                    </tr>
-                    <tr>
-                        <th>Телефон:</th>
-                        <td>{{ parent.parent_number }}</td>
-                    </tr>
-                </table>
-            </div>
+<div class="container-fluid">
+    <!-- Заголовок страницы -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="mb-1">
+                {{ parent.parent_fio }}
+            </h1>
+            <p class="text-muted mb-0">
+                {{ parent.parent_number }}
+                {% if parent.user %}
+                    <span class="badge bg-success ms-2">Есть аккаунт</span>
+                {% else %}
+                    <span class="badge bg-secondary ms-2">Нет аккаунта</span>
+                {% endif %}
+            </p>
+        </div>
+        <div class="btn-group" role="group">
+            {% if user.groups.all.0.name == 'Заведующие' or user.is_superuser %}
+            <a href="{% url 'parent_edit' parent.pk %}" class="btn btn-warning">
+                Редактировать
+            </a>
+            <a href="{% url 'parent_delete' parent.pk %}" class="btn btn-danger">
+                Удалить
+            </a>
+            {% endif %}
+            <a href="{% url 'parent_list' %}" class="btn btn-secondary">
+                Назад к списку
+            </a>
         </div>
     </div>
-    
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Дети родителя</h5>
-            </div>
-            <div class="card-body">
-                {% if children %}
-                <div class="list-group">
-                    {% for child in children %}
-                    <a href="{% url 'student_detail' child.student.pk %}" class="list-group-item list-group-item-action">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h6 class="mb-1">{{ child.student.student_fio }}</h6>
-                            <small class="text-muted">{{ child.relationship_type }}</small>
-                        </div>
-                        <small class="text-muted">
-                            Группа: {{ child.student.group.group_name }}
-                        </small>
-                    </a>
-                    {% endfor %}
+
+    <div class="row g-4">
+        <!-- Основная информация -->
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Основная информация</h5>
                 </div>
-                {% else %}
-                <p class="text-muted">Нет привязанных детей</p>
-                {% endif %}
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-5">ФИО:</dt>
+                        <dd class="col-sm-7">{{ parent.parent_fio }}</dd>
+                        
+                        <dt class="col-sm-5">Телефон:</dt>
+                        <dd class="col-sm-7">{{ parent.parent_number }}</dd>
+                        
+                        {% if parent.user %}
+                        <dt class="col-sm-5">Аккаунт:</dt>
+                        <dd class="col-sm-7">
+                            <span class="badge bg-success">{{ parent.user.username }}</span>
+                        </dd>
+                        
+                        {% if parent.user.email %}
+                        <dt class="col-sm-5">Email:</dt>
+                        <dd class="col-sm-7">{{ parent.user.email }}</dd>
+                        {% endif %}
+                        
+                        <dt class="col-sm-5">Статус:</dt>
+                        <dd class="col-sm-7">
+                            {% if parent.user.is_active %}
+                                <span class="badge bg-success">Активен</span>
+                            {% else %}
+                                <span class="badge bg-danger">Неактивен</span>
+                            {% endif %}
+                        </dd>
+                        {% else %}
+                        <dt class="col-sm-5">Аккаунт:</dt>
+                        <dd class="col-sm-7">
+                            <span class="badge bg-secondary">Не создан</span>
+                        </dd>
+                        {% endif %}
+                    </dl>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Дети родителя -->
+        <div class="col-md-8">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        Дети родителя 
+                        <span class="badge bg-light text-dark">{{ children.count }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if children %}
+                    <div class="list-group">
+                        {% for child in children %}
+                        <a href="{% url 'student_detail' child.student.pk %}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">
+                                        {{ child.student.student_fio }}
+                                    </h6>
+                                    <small class="text-muted">
+                                        Группа: {{ child.student.group.group_name }}
+                                    </small>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-light text-dark">{{ child.relationship_type }}</span>
+                                    {% if child.is_primary %}
+                                    <span class="badge bg-warning">Основной контакт</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info mb-0 text-center">
+                        <h5 class="mt-3">Нет привязанных детей</h5>
+                        <p class="mb-0">Дети появятся здесь после привязки к родителю</p>
+                    </div>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
