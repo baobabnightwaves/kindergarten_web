@@ -1,0 +1,82 @@
+/**
+ * Стили для сортируемых таблиц
+ */
+
+/* Стили для заголовков сортируемых таблиц */
+table.sortable thead th {
+    position: relative;
+    cursor: pointer;
+    user-select: none;
+    padding-right: 25px !important;
+    transition: background-color 0.2s;
+}
+
+table.sortable thead th:not(.no-sort):hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Индикатор сортировки */
+table.sortable thead th .sort-indicator {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.3;
+    transition: opacity 0.2s;
+    font-size: 0.9em;
+}
+
+table.sortable thead th:hover .sort-indicator {
+    opacity: 0.6;
+}
+
+table.sortable thead th[data-sort-direction="asc"] .sort-indicator,
+table.sortable thead th[data-sort-direction="desc"] .sort-indicator {
+    opacity: 1;
+    color: #28a745;
+}
+
+/* Анимация для тела таблицы при сортировке */
+table.sortable tbody {
+    transition: opacity 0.3s ease;
+}
+
+/* Подсказка для пользователя */
+table.sortable thead th:not(.no-sort)::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    pointer-events: none;
+}
+
+/* Столбцы, которые не сортируются */
+table.sortable thead th.no-sort {
+    cursor: default;
+    padding-right: 0.75rem !important;
+}
+
+/* Для темных заголовков таблиц */
+table.sortable thead.table-dark th:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+table.sortable thead.table-dark th[data-sort-direction="asc"] .sort-indicator,
+table.sortable thead.table-dark th[data-sort-direction="desc"] .sort-indicator {
+    color: #4ade80;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+    table.sortable thead th {
+        font-size: 0.9em;
+        padding-right: 20px !important;
+    }
+    
+    table.sortable thead th .sort-indicator {
+        right: 5px;
+        font-size: 0.8em;
+    }
+}

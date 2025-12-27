@@ -64,13 +64,15 @@
         <div class="card-body">
             {% if parents %}
             <div class="table-responsive">
-                <table class="table table-hover">
+                <table class="table table-striped table-hover sortable">
                     <thead>
                         <tr>
                             <th>ФИО</th>
-                            <th>Телефон</th>
+                            <th class="no-sort">Телефон</th>
                             <th>Количество детей</th>
-                            <th>Действия</th>
+                            {% if user.groups.all.0.name == 'Заведующие' or user.is_superuser %}
+                            <th class="no-sort">Действия</th>
+                            {% endif %}
                         </tr>
                     </thead>
                     <tbody>
@@ -87,18 +89,18 @@
                                 <span class="badge bg-primary">{{ children_count }}</span>
                                 {% endwith %}
                             </td>
+                            {% if user.groups.all.0.name == 'Заведующие' or user.is_superuser %}
                             <td>
                                 <div class="btn-group btn-group-sm" role="group">
-                                    {% if user.groups.all.0.name == 'Заведующие' or user.is_superuser %}
                                     <a href="{% url 'parent_edit' parent.pk %}" class="btn btn-warning" title="Редактировать">
                                         Редактировать
                                     </a>
                                         <a href="{% url 'parent_delete' parent.pk %}" class="btn btn-danger" title="Удалить">
                                         Удалить
                                     </a>
-                                    {% endif %}
                                 </div>
                             </td>
+                            {% endif %}
                         </tr>
                         {% endfor %}
                     </tbody>

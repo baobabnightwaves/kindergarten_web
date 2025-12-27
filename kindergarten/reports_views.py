@@ -81,34 +81,7 @@ def generate_report_view(request, report_type):
         'filters': filters
     }
     return render(request, 'kindergarten/report_result.html', context)
-@login_required
-def report_builder(request):
-    if not (request.user.groups.filter(name='Заведующие').exists() or request.user.is_superuser):
-        messages.error(request, 'Доступ запрещен')
-        return redirect('home')
-    if request.method == 'POST':
-        report_type = request.POST.get('report_type')
-        filters = {
-            'start_date': request.POST.get('start_date'),
-            'end_date': request.POST.get('end_date'),
-            'group_id': request.POST.get('group_id'),
-            'teacher_id': request.POST.get('teacher_id'),
-            'format': request.POST.get('format', 'html')
-        }
-        filters = {k: v for k, v in filters.items() if v}
-        return redirect(f'{reverse("generate_report", args=[report_type])}?{request.POST.urlencode()}')
-    context = {
-        'groups': Group.objects.all(),
-        'teachers': Teacher.objects.all(),
-        'report_types': [
-            ('overall_stats', 'Общая статистика'),
-            ('detailed_attendance', 'Детальная посещаемость'),
-            ('financial_report', 'Финансовый отчет'),
-            ('group_attendance', 'Посещаемость по группам'),
-            ('monthly_stats', 'Статистика по месяцам'),
-        ]
-    }
-    return render(request, 'kindergarten/report_builder.html', context)
+
 @login_required
 def api_dashboard_data(request):
     if request.user.groups.filter(name='Заведующие').exists() or request.user.is_superuser:
@@ -165,7 +138,7 @@ def api_dashboard_data(request):
             data['age_chart']['datasets'][0]['data'].append(count)
         for group in Group.objects.all():
             current = group.current_students_count()
-            capacity = group.max_capacity
+            capacity = Group.MAX_STUDENTS
             percentage = round(current / capacity * 100, 1) if capacity > 0 else 0
             data['capacity_chart']['labels'].append(group.group_name)
             data['capacity_chart']['datasets'][0]['data'].append(percentage)

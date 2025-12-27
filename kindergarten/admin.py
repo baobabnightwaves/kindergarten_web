@@ -14,9 +14,9 @@ class TeacherAdmin(admin.ModelAdmin):
     search_fields = ('teacher_fio', 'teacher_number')
 @admin.register(Group)
 class GroupAdmin(admin.ModelAdmin):
-    list_display = ('group_id', 'group_name', 'group_category', 'group_year', 'teacher', 'room_number')
+    list_display = ('group_id', 'group_name', 'group_category', 'group_year', 'teacher')
     list_filter = ('group_category', 'group_year')
-    search_fields = ('group_name', 'room_number')
+    search_fields = ('group_name',)
 @admin.register(Parent)
 class ParentAdmin(admin.ModelAdmin):
     list_display = ('parent_id', 'parent_fio', 'parent_number')

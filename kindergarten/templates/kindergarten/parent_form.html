@@ -121,7 +121,7 @@ function removeRelation(relationId, studentName) {
         // Создаем форму для отправки POST-запроса
         const form = document.createElement('form');
         form.method = 'POST';
-        form.action = `/kindergarten/relations/${relationId}/remove/`;
+        form.action = `/relations/${relationId}/remove/`;
         
         // Добавляем CSRF токен
         const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;

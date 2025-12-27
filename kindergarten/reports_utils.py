@@ -22,6 +22,7 @@ def get_report_data_threaded(user, report_type, filters=None):
     return thread
 def generate_report_data(user, report_type, filters):
     from .models import Student, Teacher, Group, Parent, Attendance, StudentParent
+    MAX_CAPACITY = Group.MAX_STUDENTS
     try:
         if user.groups.filter(name='Родители').exists():
             if hasattr(user, 'parent_profile'):
@@ -158,8 +159,8 @@ def get_admin_report_data(user, report_type, filters):
                 'category': group.get_group_category_display(),
                 'teacher': group.teacher.teacher_fio if group.teacher else 'Не назначен',
                 'students_count': students_count,
-                'capacity': group.max_capacity,
-                'fill_percentage': round(students_count / group.max_capacity * 100, 1) if group.max_capacity > 0 else 0,
+                'capacity': MAX_CAPACITY,
+                'fill_percentage': round(students_count / MAX_CAPACITY * 100, 1) if MAX_CAPACITY > 0 else 0,
                 'present_today': attendance_today['present'] or 0,
                 'absent_today': attendance_today['absent'] or 0,
                 'attendance_rate': round(
@@ -316,6 +317,13 @@ def get_child_attendance_calendar(child):
     from .models import Attendance
     end_date = date.today()
     start_date = end_date - timedelta(days=29)
+
+    # Выравниваем период по неделям (с понедельника по воскресенье)
+    start_weekday = start_date.weekday()  # 0=Пн, 6=Вс
+    padded_start_date = start_date - timedelta(days=start_weekday)
+    end_weekday = end_date.weekday()
+    padded_end_date = end_date + timedelta(days=(6 - end_weekday))
+
     attendances = Attendance.objects.filter(
         student=child,
         attendance_date__range=[start_date, end_date]
@@ -328,37 +336,46 @@ def get_child_attendance_calendar(child):
         for att in attendances
     }
     calendar_data = []
-    current_date = start_date
-    while current_date <= end_date:
+    current_date = padded_start_date
+    while current_date <= padded_end_date:
         is_weekend = current_date.weekday() >= 5
+        is_padding = current_date < start_date or current_date > end_date
         day_data = {
             'date': current_date.strftime('%Y-%m-%d'),
             'day_name': current_date.strftime('%A'),
-            'day_num': current_date.day,
+            'day_num': ('' if is_padding else current_date.day),
+            'weekday': current_date.weekday(),  # 0=Пн, 6=Вс
             'is_weekend': is_weekend,
+            'is_padding': is_padding,
         }
-        if current_date in attendance_dict:
-            att_data = attendance_dict[current_date]
-            if att_data['status']:
-                day_data['status'] = 'present'
-                day_data['reason'] = ''
-            else:
-                reason_lower = att_data['reason'].lower() if att_data['reason'] else ''
-                if 'болезн' in reason_lower or 'болел' in reason_lower or 'болен' in reason_lower:
-                    day_data['status'] = 'sick'
+        if not is_padding:
+            if current_date in attendance_dict:
+                att_data = attendance_dict[current_date]
+                if att_data['status']:
+                    day_data['status'] = 'present'
+                    day_data['reason'] = ''
                 else:
-                    day_data['status'] = 'absent'
-                day_data['reason'] = att_data['reason']
-        else:
-            if is_weekend:
-                day_data['status'] = 'weekend'
-                day_data['reason'] = ''
+                    reason_lower = att_data['reason'].lower() if att_data['reason'] else ''
+                    if 'болезн' in reason_lower or 'болел' in reason_lower or 'болен' in reason_lower:
+                        day_data['status'] = 'sick'
+                    else:
+                        day_data['status'] = 'absent'
+                    day_data['reason'] = att_data['reason']
             else:
-                day_data['status'] = 'no_data'
-                day_data['reason'] = ''
+                if is_weekend:
+                    day_data['status'] = 'weekend'
+                    day_data['reason'] = ''
+                else:
+                    day_data['status'] = 'no_data'
+                    day_data['reason'] = ''
+        else:
+            # Пустые ячейки для выравнивания недель
+            day_data['status'] = 'pad'
+            day_data['reason'] = ''
         calendar_data.append(day_data)
         current_date += timedelta(days=1)
-    working_days = [d for d in calendar_data if not d['is_weekend']]
+    # В статистике учитываем только рабочие дни в исходном диапазоне (без паддинга)
+    working_days = [d for d in calendar_data if not d['is_weekend'] and not d['is_padding']]
     total_days = len(working_days)
     present_days = len([d for d in working_days if d['status'] == 'present'])
     absent_days = len([d for d in working_days if d['status'] in ['absent', 'sick']])
@@ -497,7 +514,8 @@ def generate_teacher_students_with_parents(teacher_id):
     except Teacher.DoesNotExist:
         return None
 def generate_teacher_dashboard(teacher_id):
-    from .models import Teacher, Student, Attendance
+    from .models import Teacher, Student, Attendance, Group
+    MAX_CAPACITY = Group.MAX_STUDENTS
     try:
         teacher = Teacher.objects.get(pk=teacher_id)
         groups = teacher.group_set.all()
@@ -579,8 +597,8 @@ def generate_teacher_dashboard(teacher_id):
                 'group_name': group.group_name,
                 'category': group.get_group_category_display(),
                 'students_count': students_count,
-                'max_capacity': group.max_capacity,
-                'fill_percentage': round((students_count / group.max_capacity * 100) if group.max_capacity > 0 else 0, 1)
+                'max_capacity': MAX_CAPACITY,
+                'fill_percentage': round((students_count / MAX_CAPACITY * 100) if MAX_CAPACITY > 0 else 0, 1)
             })
         total_students = Student.objects.filter(
             group__in=groups,
@@ -624,13 +642,14 @@ def generate_teacher_dashboard(teacher_id):
         return None
 def generate_admin_group_report(group_id):
     from .models import Group, Student, Teacher, Attendance, StudentParent
+    MAX_CAPACITY = Group.MAX_STUDENTS
     try:
         group = Group.objects.select_related('teacher').get(pk=group_id)
         group_info = {
             'id': group.pk,
             'name': group.group_name,
             'category': group.get_group_category_display(),
-            'max_capacity': group.max_capacity,
+            'max_capacity': MAX_CAPACITY,
             'teacher': {
                 'id': group.teacher.pk if group.teacher else None,
                 'fio': group.teacher.teacher_fio if group.teacher else 'Не назначен',
@@ -684,7 +703,10 @@ def generate_admin_group_report(group_id):
                 }
             })
         total_students = len(students_data)
-        fill_percentage = round((total_students / group.max_capacity * 100) if group.max_capacity > 0 else 0, 1)
+        # Распределение по полу
+        male_count = Student.objects.filter(group=group, student_date_out__isnull=True, student_gender='М').count()
+        female_count = Student.objects.filter(group=group, student_date_out__isnull=True, student_gender='Ж').count()
+        fill_percentage = round((total_students / MAX_CAPACITY * 100) if MAX_CAPACITY > 0 else 0, 1)
         avg_attendance = Attendance.objects.filter(
             student__group=group,
             attendance_date__range=[start_of_month, today]
@@ -703,11 +725,15 @@ def generate_admin_group_report(group_id):
             'students': students_data,
             'statistics': {
                 'total_students': total_students,
-                'max_capacity': group.max_capacity,
+                'max_capacity': MAX_CAPACITY,
                 'fill_percentage': fill_percentage,
                 'avg_attendance_percentage': avg_percentage,
                 'avg_attendance_present': avg_attendance['present'] or 0,
                 'avg_attendance_total': avg_attendance['total'] or 0
+            },
+            'gender_distribution': {
+                'male': male_count,
+                'female': female_count
             },
             'chart_data': chart_data
         }
@@ -716,6 +742,7 @@ def generate_admin_group_report(group_id):
 def generate_teacher_all_groups_report(teacher_id):
     """Generate report for all groups of a specific teacher"""
     from .models import Group, Student, Teacher, Attendance, StudentParent
+    MAX_CAPACITY = Group.MAX_STUDENTS
     
     try:
         teacher = Teacher.objects.get(pk=teacher_id)
@@ -737,6 +764,7 @@ def generate_teacher_all_groups_report(teacher_id):
                     'avg_fill_percentage': 0,
                     'avg_attendance_percentage': 0
                 },
+                'gender_distribution': {'male': 0, 'female': 0},
                 'chart_data': {'labels': [], 'datasets': []}
             }
         
@@ -767,14 +795,14 @@ def generate_teacher_all_groups_report(teacher_id):
             total_att = attendance_stats['total'] or 0
             percentage = round((present / total_att * 100) if total_att > 0 else 0, 1)
             
-            fill_percentage = round((students / group.max_capacity * 100) if group.max_capacity > 0 else 0, 1)
+            fill_percentage = round((students / MAX_CAPACITY * 100) if MAX_CAPACITY > 0 else 0, 1)
             
             groups_data.append({
                 'id': group.pk,
                 'name': group.group_name,
                 'category': group.get_group_category_display(),
                 'students_count': students,
-                'max_capacity': group.max_capacity,
+                'max_capacity': MAX_CAPACITY,
                 'fill_percentage': fill_percentage,
                 'attendance_present': present,
                 'attendance_absent': attendance_stats['absent'] or 0,
@@ -783,10 +811,13 @@ def generate_teacher_all_groups_report(teacher_id):
             })
             
             total_students += students
-            total_capacity += group.max_capacity
+            total_capacity += MAX_CAPACITY
         
         # Calculate overall statistics
         avg_fill = round((total_students / total_capacity * 100) if total_capacity > 0 else 0, 1)
+        # Gender distribution across all teacher's groups
+        male_total = Student.objects.filter(group__teacher=teacher, student_date_out__isnull=True, student_gender='М').count()
+        female_total = Student.objects.filter(group__teacher=teacher, student_date_out__isnull=True, student_gender='Ж').count()
         
         overall_attendance = Attendance.objects.filter(
             student__group__teacher=teacher,
@@ -857,6 +888,10 @@ def generate_teacher_all_groups_report(teacher_id):
                 'month_present': overall_attendance['present'] or 0,
                 'month_total': overall_attendance['total'] or 0
             },
+            'gender_distribution': {
+                'male': male_total,
+                'female': female_total
+            },
             'chart_data': {
                 'labels': labels,
                 'present': present_data,
@@ -869,6 +904,7 @@ def generate_teacher_all_groups_report(teacher_id):
 
 def generate_admin_dashboard():
     from .models import Group, Student, Teacher, Parent, Attendance
+    MAX_CAPACITY = Group.MAX_STUDENTS
     today = date.today()
     start_of_month = date(today.year, today.month, 1)
     total_students = Student.objects.filter(student_date_out__isnull=True).count()
@@ -925,11 +961,11 @@ def generate_admin_dashboard():
             group=group,
             student_date_out__isnull=True
         ).count()
-        fill_percentage = round((students_count / group.max_capacity * 100) if group.max_capacity > 0 else 0, 1)
+        fill_percentage = round((students_count / MAX_CAPACITY * 100) if MAX_CAPACITY > 0 else 0, 1)
         groups_fill.append({
             'group_name': group.group_name,
             'students_count': students_count,
-            'max_capacity': group.max_capacity,
+            'max_capacity': MAX_CAPACITY,
             'fill_percentage': fill_percentage
         })
     groups_today_attendance = []

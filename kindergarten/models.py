@@ -39,21 +39,21 @@ class Group(models.Model):
     group_year = models.IntegerField(verbose_name='Год обучения', default=2024, db_index=True)
     teacher = models.ForeignKey(Teacher, on_delete=models.SET_NULL, null=True, 
                                blank=True, verbose_name='Воспитатель')
-    room_number = models.CharField(max_length=10, verbose_name='Номер кабинета', 
-                                  default='101')
-    max_capacity = models.IntegerField(verbose_name='Максимальная наполняемость', 
-                                      default=MAX_STUDENTS)
+    
     def current_students_count(self):
         if not self.pk:
             return 0
         return self.student_set.count()
+    
     def available_places(self):
-        return self.max_capacity - self.current_students_count()
+        return self.MAX_STUDENTS - self.current_students_count()
+    
     def is_full(self):
-        return self.current_students_count() >= self.max_capacity
+        return self.current_students_count() >= self.MAX_STUDENTS
+    
     def clean(self):
-        if self.pk and self.current_students_count() > self.max_capacity:
-            raise ValidationError(f'Группа не может содержать более {self.max_capacity} учеников')
+        if self.pk and self.current_students_count() > self.MAX_STUDENTS:
+            raise ValidationError(f'Группа не может содержать более {self.MAX_STUDENTS} учеников')
     def __str__(self):
         return f"{self.group_name} ({self.group_category})"
     class Meta:
@@ -86,7 +86,7 @@ class Student(models.Model):
         if age_at_entry < 2 or age_at_entry > 7:
             raise ValidationError('Прием детей в детский сад осуществляется только в возрасте от 2 до 7 лет')
         if self.group and self.group.is_full() and not self.pk:
-            raise ValidationError(f'Группа "{self.group.group_name}" уже заполнена (максимум {self.group.max_capacity} учеников)')
+            raise ValidationError(f'Группа "{self.group.group_name}" уже заполнена (максимум {Group.MAX_STUDENTS} учеников)')
     def age_at_entry(self):
         if self.student_date_in and self.student_birthday:
             entry_date = self.student_date_in

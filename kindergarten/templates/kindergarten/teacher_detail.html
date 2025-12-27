@@ -5,17 +5,6 @@
 
 {% block content %}
 <div class="container">
-    <div class="row">
-        <div class="col-md-12">
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{% url 'home' %}">Главная</a></li>
-                    <li class="breadcrumb-item"><a href="{% url 'teacher_list' %}">Воспитатели</a></li>
-                    <li class="breadcrumb-item active">{{ teacher.teacher_fio }}</li>
-                </ol>
-            </nav>
-        </div>
-    </div>
     
     <div class="row">
         <div class="col-md-4">

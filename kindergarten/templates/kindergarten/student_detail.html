@@ -19,12 +19,12 @@
                 {% endif %}
             </p>
         </div>
-        <div class="btn-group" role="group">
+        <div>
             {% if user.groups.all.0.name == 'Заведующие' or user.is_superuser %}
-            <a href="{% url 'student_edit' student.pk %}" class="btn btn-warning">
+            <a href="{% url 'student_edit' student.pk %}" class="btn btn-warning me-2">
                 Редактировать
             </a>
-            <a href="{% url 'student_delete' student.pk %}" class="btn btn-danger">
+            <a href="{% url 'student_delete' student.pk %}" class="btn btn-danger me-3">
                 Удалить
             </a>
             <a href="{% url 'student_list' %}" class="btn btn-secondary">

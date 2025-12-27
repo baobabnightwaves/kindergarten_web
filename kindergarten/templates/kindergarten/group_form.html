@@ -156,22 +156,7 @@
                     </div>
                     
                     <div class="col-md-6">
-                        <div>
-                            <label for="{{ form.room_number.id_for_label }}">Номер кабинета</label>
-                            {{ form.room_number }}
-                            {% if form.room_number.errors %}
-                            <div class="error-text">{{ form.room_number.errors }}</div>
-                            {% endif %}
-                        </div>
                     </div>
-                </div>
-                
-                <div>
-                    <label for="{{ form.max_capacity.id_for_label }}">Максимальная наполняемость</label>
-                    {{ form.max_capacity }}
-                    {% if form.max_capacity.errors %}
-                    <div class="error-text">{{ form.max_capacity.errors }}</div>
-                    {% endif %}
                 </div>
                 
                 <!-- Кнопки действий -->

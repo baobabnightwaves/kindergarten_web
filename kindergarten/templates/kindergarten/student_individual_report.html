@@ -105,17 +105,21 @@
                                 {% if forloop.counter0|divisibleby:7 %}
                                     <tr>
                                 {% endif %}
-                                
-                                <td class="
-                                    {% if day.status == 'present' %}bg-success text-white
-                                    {% elif day.status == 'sick' %}bg-warning text-dark
-                                    {% elif day.status == 'absent' %}bg-danger text-white
-                                    {% elif day.status == 'weekend' %}bg-secondary text-white
-                                    {% else %}bg-light
-                                    {% endif %}
-                                " title="{{ day.date }} - {% if day.status == 'present' %}Присутствовал{% elif day.status == 'sick' %}Отсутствовал по болезни: {{ day.reason }}{% elif day.status == 'absent' %}Отсутствовал: {{ day.reason }}{% elif day.status == 'weekend' %}Выходной{% else %}Нет данных{% endif %}">
-                                    {{ day.day_num }}
-                                </td>
+
+                                {% if day.is_padding %}
+                                    <td class="bg-white"></td>
+                                {% else %}
+                                    <td class="
+                                        {% if day.status == 'present' %}bg-success text-white
+                                        {% elif day.status == 'sick' %}bg-warning text-dark
+                                        {% elif day.status == 'absent' %}bg-danger text-white
+                                        {% elif day.status == 'weekend' %}bg-secondary text-white
+                                        {% else %}bg-light
+                                        {% endif %}
+                                    " title="{{ day.date }} - {% if day.status == 'present' %}Присутствовал{% elif day.status == 'sick' %}Отсутствовал по болезни: {{ day.reason }}{% elif day.status == 'absent' %}Отсутствовал: {{ day.reason }}{% elif day.status == 'weekend' %}Выходной{% else %}Нет данных{% endif %}">
+                                        {{ day.day_num }}
+                                    </td>
+                                {% endif %}
 
                                 {% if forloop.counter|divisibleby:7 or forloop.last %}
                                     </tr>

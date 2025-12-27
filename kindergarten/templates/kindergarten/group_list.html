@@ -134,14 +134,14 @@
                         <tr>
                             <th>Количество учеников:</th>
                             <td>
-                                <span class="badge bg-secondary">{{ group.current_count }} / {{ max_capacity }}</span>
+                                <span class="badge bg-secondary">{{ group.current_count }}</span>
                             </td>
                         </tr>
                         <tr>
-                            <th>Свободных мест:</th>
+                            <th>Группа заполнена:</th>
                             <td>
                                 {% if group.is_full_flag %}
-                                    <span class="badge bg-danger">Группа заполнена</span>
+                                    <span class="badge bg-danger">Да</span>
                                 {% else %}
                                     <span class="badge bg-success">{{ group.available }}</span>
                                 {% endif %}

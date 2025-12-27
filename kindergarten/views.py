@@ -462,7 +462,7 @@ def add_child_to_parent(request, parent_id):
                 messages.success(request, f'Ребенок {student.student_fio} добавлен к родителю {parent.parent_fio}')
             else:
                 messages.warning(request, 'Эта связь уже существует')
-            return redirect('parent_detail', pk=parent_id)
+            return redirect('parent_edit', pk=parent_id)
     else:
         form = AddChildToParentForm(initial={'parent': parent})
     return render(request, 'kindergarten/add_child_to_parent.html', {
@@ -490,7 +490,7 @@ def add_parent_to_child(request, student_id):
                 messages.success(request, f'Родитель {parent.parent_fio} добавлен к ребенку {student.student_fio}')
             else:
                 messages.warning(request, 'Эта связь уже существует')
-            return redirect('student_detail', pk=student_id)
+            return redirect('student_edit', pk=student_id)
     else:
         form = AddParentToChildForm(initial={'student': student})
     return render(request, 'kindergarten/add_parent_to_child.html', {
@@ -502,15 +502,25 @@ def add_parent_to_child(request, student_id):
 @user_passes_test(is_director_or_superuser, login_url='home')
 def remove_parent_child_relation(request, relation_id):
     relation = get_object_or_404(StudentParent, pk=relation_id)
+    student_id = relation.student.pk
+    parent_id = relation.parent.pk
+    
     if request.method == 'POST':
         student_name = relation.student.student_fio
         parent_name = relation.parent.parent_fio
         relation.delete()
-        messages.success(request, f'Связь между {parent_name} и {student_name} удалена')        
-        referer = request.META.get('HTTP_REFERER')
-        if referer:
-            return redirect(referer)
-        return redirect('home')
+        messages.success(request, f'Связь между {parent_name} и {student_name} удалена')
+        
+        # Определяем откуда пришел запрос и редиректим обратно
+        referer = request.META.get('HTTP_REFERER', '')
+        if 'add-parent' in referer or 'student' in referer or f'/students/{student_id}/' in referer:
+            return redirect('student_edit', pk=student_id)
+        elif 'add-child' in referer or 'parent' in referer or f'/parents/{parent_id}/' in referer:
+            return redirect('parent_edit', pk=parent_id)
+        else:
+            # Если не можем определить, редиректим на форму редактирования ученика
+            return redirect('student_edit', pk=student_id)
+    
     return render(request, 'kindergarten/remove_parent_child_confirm.html', {
         'relation': relation
     })
@@ -619,6 +629,7 @@ def attendance_mark_bulk(request):
             messages.error(request, f'Ошибка: {str(e)}')
             return redirect('attendance_list')
     return redirect('attendance_list')
+
 @login_required
 @role_required('teacher', 'director')
 def attendance_update(request, pk):
@@ -631,6 +642,7 @@ def attendance_update(request, pk):
         attendance.save()
         return JsonResponse({'success': True})
     return JsonResponse({'success': False}, status=400)
+
 @login_required
 @role_required('teacher', 'director')
 def attendance_create(request):
@@ -643,6 +655,7 @@ def attendance_create(request):
     else:
         form = AttendanceForm()
     return render(request, 'kindergarten/attendance_form.html', {'form': form, 'title': 'Добавление посещаемости'})
+
 @login_required
 @role_required('teacher', 'director')
 def attendance_edit(request, pk):
@@ -656,6 +669,7 @@ def attendance_edit(request, pk):
     else:
         form = AttendanceForm(instance=attendance)
     return render(request, 'kindergarten/attendance_form.html', {'form': form, 'title': 'Редактирование посещаемости'})
+
 @login_required
 @role_required('teacher', 'director')
 def attendance_delete(request, pk):
@@ -665,9 +679,11 @@ def attendance_delete(request, pk):
         messages.success(request, f'Запись о посещаемости удалена!')
         return redirect('attendance_list')
     return render(request, 'kindergarten/attendance_confirm_delete.html', {'attendance': attendance})
+
 @login_required
 def reports(request):
     return render(request, 'kindergarten/reports.html')
+
 @login_required
 def generate_report(request, report_type):
     from datetime import datetime
@@ -719,6 +735,7 @@ def generate_report(request, report_type):
         }
         return render(request, 'kindergarten/report_attendance.html', context)
     return redirect('reports')
+
 @login_required
 def search(request):
     query = request.GET.get('q', '')
@@ -736,6 +753,7 @@ def search(request):
         'groups': groups,
         'parents': parents,
     })
+
 def api_stats(request):
     today = date.today()
     stats = {

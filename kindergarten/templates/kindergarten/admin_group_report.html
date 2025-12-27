@@ -5,13 +5,18 @@
 
 {% block content %}
 <div class="container-fluid mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="fas fa-file-alt"></i> Детальный отчет по группе</h2>
-        {% if report_data %}
-            <a href="?group_id={{ selected_group_id }}&format=csv" class="btn btn-success">
-                <i class="fas fa-file-csv"></i> Экспорт в CSV
+    <div class="mb-4">
+        <h2 class="mb-3"><i class="fas fa-file-alt"></i> Детальный отчет по группе</h2>
+        <div class="d-flex gap-2">
+            <a href="{% url 'reports_selector' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Назад к выбору отчета
             </a>
-        {% endif %}
+            {% if report_data %}
+                <a href="?group_id={{ selected_group_id }}&format=csv" class="btn btn-success">
+                    <i class="fas fa-file-csv"></i> Экспорт в CSV
+                </a>
+            {% endif %}
+        </div>
     </div>
     <hr>
 
@@ -44,34 +49,6 @@
     </div>
 
     {% if report_data %}
-        <!-- Информация о группе -->
-        <div class="card mb-4">
-            <div class="card-header bg-info text-white">
-                <h5 class="mb-0"><i class="fas fa-info-circle"></i> Информация о группе</h5>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-3">
-                        <strong>Название:</strong><br>
-                        <h4>{{ report_data.group_info.name }}</h4>
-                    </div>
-                    <div class="col-md-3">
-                        <strong>Категория:</strong><br>
-                        <span class="badge bg-primary p-2">{{ report_data.group_info.category }}</span>
-                    </div>
-                    <div class="col-md-3">
-                        <strong>Воспитатель:</strong><br>
-                        {{ report_data.group_info.teacher.fio }}<br>
-                        <small class="text-muted">{{ report_data.group_info.teacher.position }}</small>
-                    </div>
-                    <div class="col-md-3">
-                        <strong>Вместимость:</strong><br>
-                        {{ report_data.statistics.total_students }} / {{ report_data.group_info.max_capacity }}
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <!-- Статистика группы -->
         <div class="row mb-4">
             <div class="col-md-3">
@@ -111,6 +88,33 @@
                 </div>
             </div>
         </div>
+       <!-- Информация о группе (перемещено ниже графиков) -->
+       <div class="card mb-4">
+           <div class="card-header bg-info text-white">
+               <h5 class="mb-0"><i class="fas fa-info-circle"></i> Информация о группе</h5>
+           </div>
+           <div class="card-body">
+               <div class="row">
+                   <div class="col-md-3">
+                       <strong>Название:</strong><br>
+                       <h4>{{ report_data.group_info.name }}</h4>
+                   </div>
+                   <div class="col-md-3">
+                       <strong>Категория:</strong><br>
+                       <span class="badge bg-primary p-2">{{ report_data.group_info.category }}</span>
+                   </div>
+                   <div class="col-md-3">
+                       <strong>Воспитатель:</strong><br>
+                       {{ report_data.group_info.teacher.fio }}<br>
+                       <small class="text-muted">{{ report_data.group_info.teacher.position }}</small>
+                   </div>
+                   <div class="col-md-3">
+                       <strong>Количество учеников:</strong><br>
+                       {{ report_data.statistics.total_students }}
+                   </div>
+               </div>
+           </div>
+       </div>
 
         <!-- График посещаемости за 30 дней -->
         <div class="card mb-4">
@@ -137,7 +141,37 @@
                 {% endif %}
             </div>
         </div>
-
+        <!-- Диаграмма пола -->
+        <div class="card mb-6">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-venus-mars"></i> Соотношение мальчиков и девочек</h5>
+            </div>
+            <div class="card-body">
+                {% if report_data.gender_distribution %}
+                    <div class="row align-items-center justify-content-center text-center">
+                        <div class="col-md-4 d-flex justify-content-center">
+                            <canvas id="genderPieChart" height="100" style="max-width:300px;"></canvas>
+                        </div>
+                        <div class="col-md-4 d-flex justify-content-center">
+                            <ul class="list-group text-start">
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span><span class="badge bg-info me-2">М</span> Мальчики </span>
+                                    <span class="badge bg-info rounded-pill me-2">{{ report_data.gender_distribution.male }}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span><span class="badge bg-danger me-2">Ж</span> Девочки </span>
+                                    <span class="badge bg-danger rounded-pill me-2">{{ report_data.gender_distribution.female }}</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info mb-0">
+                        <i class="fas fa-info-circle"></i> Нет данных о поле учеников в группе
+                    </div>
+                {% endif %}
+            </div>
+        </div>
         <!-- Список учеников с родителями и посещаемостью -->
         <div class="card mb-4">
             <div class="card-header bg-dark text-white">
@@ -146,17 +180,17 @@
             <div class="card-body">
                 {% if report_data.students %}
                     <div class="table-responsive">
-                        <table class="table table-striped table-hover">
+                        <table class="table table-striped table-hover sortable">
                             <thead class="table-dark">
                                 <tr>
-                                    <th>#</th>
+                                    <th class="no-sort">#</th>
                                     <th>ФИО ученика</th>
                                     <th>Дата рождения</th>
                                     <th>Возраст</th>
                                     <th>Дата поступления</th>
                                     <th>Посещаемость (месяц)</th>
-                                    <th>Родители</th>
-                                    <th>Действия</th>
+                                    <th class="no-sort">Родители</th>
+                                    <th class="no-sort">Действия</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -226,16 +260,13 @@
         </div>
 
     {% endif %}
-
-    <div class="mt-4">
-        <a href="{% url 'reports_selector' %}" class="btn btn-secondary">
-            <i class="fas fa-arrow-left"></i> Назад к выбору отчета
-        </a>
-    </div>
 </div>
 
-{% if report_data and report_data.chart_data.labels %}
+{% if report_data %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+{% endif %}
+
+{% if report_data and report_data.chart_data.labels %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // График 1: Количество учеников (присутствовали/отсутствовали)
@@ -347,8 +378,7 @@ document.addEventListener('DOMContentLoaded', function() {
             scales: {
                 y: {
                     beginAtZero: true,
-                    max: 100,
-                    grace: '5%',
+                    suggestedMax: 105,
                     title: {
                         display: true,
                         text: 'Посещаемость (%)'
@@ -383,6 +413,46 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     new Chart(ctx2, config2);
+});
+</script>
+{% endif %}
+
+{% if report_data and report_data.gender_distribution %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const genderCanvas = document.getElementById('genderPieChart');
+    if (genderCanvas && window.Chart) {
+        const male = {{ report_data.gender_distribution.male|default:0 }};
+        const female = {{ report_data.gender_distribution.female|default:0 }};
+        new Chart(genderCanvas.getContext('2d'), {
+            type: 'pie',
+            data: {
+                labels: ['Мальчики', 'Девочки'],
+                datasets: [{
+                    data: [male, female],
+                    backgroundColor: ['#0d6efd', '#dc3545'],
+                    borderColor: ['#0b5ed7', '#bb2d3b'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) {
+                                const total = male + female || 1;
+                                const val = ctx.parsed;
+                                const percent = (val / total * 100).toFixed(1);
+                                return ctx.label + ': ' + val + ' (' + percent + '%)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
 });
 </script>
 {% endif %}

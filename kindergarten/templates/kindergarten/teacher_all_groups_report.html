@@ -5,38 +5,20 @@
 
 {% block content %}
 <div class="container-fluid mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="fas fa-chart-line"></i> Отчет по всем группам воспитателя</h2>
-        <a href="?{% for key, value in request.GET.items %}{% if key != 'format' %}{{ key }}={{ value }}&{% endif %}{% endfor %}format=csv" class="btn btn-success">
-            <i class="fas fa-file-csv"></i> Экспорт в CSV
-        </a>
+    <div class="mb-4">
+        <h2 class="mb-3"><i class="fas fa-chart-line"></i> Отчет по всем группам воспитателя</h2>
+        <div class="d-flex gap-2">
+            <a href="{% url 'reports_selector' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Назад к выбору отчета
+            </a>
+            <a href="?{% for key, value in request.GET.items %}{% if key != 'format' %}{{ key }}={{ value }}&{% endif %}{% endfor %}format=csv" class="btn btn-success">
+                <i class="fas fa-file-csv"></i> Экспорт в CSV
+            </a>
+        </div>
     </div>
     <hr>
 
     {% if report_data %}
-        <!-- Teacher Info -->
-        <div class="card mb-4">
-            <div class="card-header bg-info text-white">
-                <h5 class="mb-0"><i class="fas fa-chalkboard-teacher"></i> Информация о воспитателе</h5>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-4">
-                        <strong>ФИО:</strong><br>
-                        <h4>{{ report_data.teacher_info.fio }}</h4>
-                    </div>
-                    <div class="col-md-4">
-                        <strong>Должность:</strong><br>
-                        <span class="badge bg-primary p-2">{{ report_data.teacher_info.position }}</span>
-                    </div>
-                    <div class="col-md-4">
-                        <strong>Телефон:</strong><br>
-                        <i class="fas fa-phone"></i> {{ report_data.teacher_info.phone }}
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <!-- Overall Statistics -->
         <div class="row mb-4">
             <div class="col-md-3">
@@ -112,6 +94,41 @@
                 </div>
             </div>
         </div>
+        <!-- Gender Pie -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="fas fa-venus-mars"></i> Соотношение мальчиков и девочек</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if report_data.gender_distribution %}
+                            <div class="row align-items-center">
+                                <div class="col-7">
+                                    <canvas id="teacherGenderPieChart" height="140"></canvas>
+                                </div>
+                                <div class="col-5">
+                                    <ul class="list-group">
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            <span><span class="badge bg-info me-2">М</span> Мальчики</span>
+                                            <span class="badge bg-info rounded-pill">{{ report_data.gender_distribution.male }}</span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            <span><span class="badge bg-danger me-2">Ж</span> Девочки</span>
+                                            <span class="badge bg-danger rounded-pill">{{ report_data.gender_distribution.female }}</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-info mb-0">
+                                <i class="fas fa-info-circle"></i> Нет данных о поле учеников
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- Groups Table -->
         <div class="card mb-4">
@@ -121,17 +138,16 @@
             <div class="card-body">
                 {% if report_data.groups_data %}
                     <div class="table-responsive">
-                        <table class="table table-striped table-hover">
+                        <table class="table table-striped table-hover sortable">
                             <thead class="table-dark">
                                 <tr>
-                                    <th>#</th>
+                                    <th class="no-sort">#</th>
                                     <th>Название группы</th>
                                     <th>Категория</th>
-                                    <th>Учеников</th>
-                                    <th>Вместимость</th>
-                                    <th>Заполненность</th>
+                                    <th>Кол-во учеников</th>
+                                    <th>Заполненность (%)</th>
                                     <th>Посещаемость (месяц)</th>
-                                    <th>Действия</th>
+                                    <th class="no-sort">Действия</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -143,24 +159,10 @@
                                             <span class="badge bg-secondary">{{ group.category }}</span>
                                         </td>
                                         <td>
-                                            <span class="badge bg-info">{{ group.students_count }}</span>
+                                            <span class="badge bg-info">{{ group.students_count }}/30</span>
                                         </td>
-                                        <td>{{ group.max_capacity }}</td>
                                         <td>
-                                            <div class="progress" style="height: 25px;">
-                                                <div class="progress-bar 
-                                                    {% if group.fill_percentage >= 90 %}bg-danger
-                                                    {% elif group.fill_percentage >= 70 %}bg-warning
-                                                    {% else %}bg-success
-                                                    {% endif %}" 
-                                                    role="progressbar" 
-                                                    style="width: {{ group.fill_percentage }}%">
-                                                    {{ group.fill_percentage }}%
-                                                </div>
-                                            </div>
-                                            <small class="text-muted">
-                                                {{ group.students_count }} / {{ group.max_capacity }}
-                                            </small>
+                                            <span class="badge bg-secondary">{{ group.fill_percentage }}%</span>
                                         </td>
                                         <td>
                                             <div class="progress" style="height: 25px;">
@@ -193,10 +195,7 @@
                                 <tr>
                                     <th colspan="3">ИТОГО:</th>
                                     <th><span class="badge bg-info">{{ report_data.overall_statistics.total_students }}</span></th>
-                                    <th>{{ report_data.overall_statistics.total_capacity }}</th>
-                                    <th>
-                                        <strong>{{ report_data.overall_statistics.avg_fill_percentage }}%</strong>
-                                    </th>
+                                    <th><span class="badge bg-secondary">{{ report_data.overall_statistics.avg_fill_percentage }}%</span></th>
                                     <th>
                                         <strong>{{ report_data.overall_statistics.avg_attendance_percentage }}%</strong>
                                         <br>
@@ -222,16 +221,13 @@
             <i class="fas fa-exclamation-circle"></i> Ошибка загрузки данных отчета
         </div>
     {% endif %}
-
-    <div class="mt-4">
-        <a href="{% url 'reports_selector' %}" class="btn btn-secondary">
-            <i class="fas fa-arrow-left"></i> Назад к выбору отчета
-        </a>
-    </div>
 </div>
 
-{% if report_data and report_data.chart_data.labels %}
+{% if report_data %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+{% endif %}
+
+{% if report_data and report_data.chart_data.labels %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Bar Chart: Attendance count
@@ -332,8 +328,7 @@ document.addEventListener('DOMContentLoaded', function() {
             scales: {
                 y: {
                     beginAtZero: true,
-                    max: 100,
-                    grace: '5%',
+                    suggestedMax: 105,
                     title: {
                         display: true,
                         text: 'Посещаемость (%)'
@@ -366,6 +361,47 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+    // Gender Pie Chart
+});
+</script>
+{% endif %}
+
+{% if report_data and report_data.gender_distribution %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const genderCanvas = document.getElementById('teacherGenderPieChart');
+    if (genderCanvas && window.Chart) {
+        const male = {{ report_data.gender_distribution.male|default:0 }};
+        const female = {{ report_data.gender_distribution.female|default:0 }};
+        new Chart(genderCanvas.getContext('2d'), {
+            type: 'pie',
+            data: {
+                labels: ['Мальчики', 'Девочки'],
+                datasets: [{
+                    data: [male, female],
+                    backgroundColor: ['#0d6efd', '#dc3545'],
+                    borderColor: ['#0b5ed7', '#bb2d3b'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) {
+                                const total = male + female || 1;
+                                const val = ctx.parsed;
+                                const percent = (val / total * 100).toFixed(1);
+                                return ctx.label + ': ' + val + ' (' + percent + '%)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
 });
 </script>
 {% endif %}

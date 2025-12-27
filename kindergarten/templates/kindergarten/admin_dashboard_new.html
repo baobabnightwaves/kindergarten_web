@@ -154,8 +154,6 @@
                             <tr>
                                 <th>Группа</th>
                                 <th>Учеников</th>
-                                <th>Вместимость</th>
-                                <th>Заполненность</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -163,15 +161,6 @@
                             <tr>
                                 <td>{{ group.group_name }}</td>
                                 <td>{{ group.students_count }}</td>
-                                <td>{{ group.max_capacity }}</td>
-                                <td>
-                                    <div class="progress" style="height: 20px; min-width: 150px;">
-                                        <div class="progress-bar {% if group.fill_percentage > 90 %}bg-danger{% elif group.fill_percentage > 75 %}bg-warning{% else %}bg-success{% endif %}" 
-                                             style="width: {{ group.fill_percentage }}%">
-                                            {{ group.fill_percentage }}%
-                                        </div>
-                                    </div>
-                                </td>
                             </tr>
                             {% empty %}
                             <tr>

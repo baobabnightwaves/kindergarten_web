@@ -16,10 +16,13 @@
                 <span class="badge bg-info ms-2">{{ students.count }} учеников</span>
             </p>
         </div>
-        <div class="btn-group" role="group">
+        <div>
             {% if user.groups.all.0.name == 'Заведующие' or user.is_superuser %}
-            <a href="{% url 'group_edit' group.pk %}" class="btn btn-warning">
+            <a href="{% url 'group_edit' group.pk %}" class="btn btn-warning me-2">
                 Редактировать
+            </a>
+            <a href="{% url 'group_delete' group.pk %}" class="btn btn-danger me-3">
+                Удалить
             </a>
             {% endif %}
             <a href="{% url 'group_list' %}" class="btn btn-secondary">
@@ -43,22 +46,8 @@
                         <dt class="col-sm-6">Год обучения:</dt>
                         <dd class="col-sm-6">{{ group.group_year }}</dd>
                         
-                        <dt class="col-sm-6">Кабинет:</dt>
-                        <dd class="col-sm-6">№ {{ group.room_number }}</dd>
-                        
-                        <dt class="col-sm-6">Наполняемость:</dt>
-                        <dd class="col-sm-6">{{ students.count }} / {{ group.max_capacity }}</dd>
-                        
-                        <dt class="col-sm-6">Свободно мест:</dt>
-                        <dd class="col-sm-6">
-                            {% with available=group.available_places %}
-                                {% if available > 0 %}
-                                    <span class="badge bg-success">{{ available }}</span>
-                                {% else %}
-                                    <span class="badge bg-danger">Мест нет</span>
-                                {% endif %}
-                            {% endwith %}
-                        </dd>
+                        <dt class="col-sm-6">Количество учеников:</dt>
+                        <dd class="col-sm-6">{{ students.count }}</dd>
                     </dl>
                 </div>
             </div>
@@ -112,7 +101,7 @@
                 <div class="card-body">
                     {% if students %}
                     <div class="table-responsive">
-                        <table class="table table-striped table-hover mb-0">
+                        <table class="table table-striped table-hover sortable mb-0">
                             <thead>
                                 <tr>
                                     <th>ФИО</th>
@@ -120,7 +109,6 @@
                                     <th>Возраст</th>
                                     <th>Дата поступления</th>
                                     <th>Статус</th>
-                                    <th>Действия</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -140,11 +128,6 @@
                                         {% else %}
                                         <span class="badge bg-warning">Выпущен</span>
                                         {% endif %}
-                                    </td>
-                                    <td>
-                                        <a href="{% url 'student_detail' student.pk %}" class="btn btn-sm btn-outline-primary">
-                                            Подробнее
-                                        </a>
                                     </td>
                                 </tr>
                                 {% endfor %}

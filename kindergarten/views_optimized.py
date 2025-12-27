@@ -152,8 +152,8 @@ def api_stats_optimized(request):
         groups_stats.append({
             'name': group.group_name,
             'students_count': group.students_count,
-            'available': group.max_capacity - group.students_count,
-            'is_full': group.students_count >= group.max_capacity,
+            'available': Group.MAX_STUDENTS - group.students_count,
+            'is_full': group.students_count >= Group.MAX_STUDENTS,
             'category': group.group_category,
         })
     stats['groups_stats'] = groups_stats

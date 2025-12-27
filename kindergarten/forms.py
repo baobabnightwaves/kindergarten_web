@@ -27,7 +27,7 @@ class StudentForm(forms.ModelForm):
             if age_at_entry < 2 or age_at_entry > 7:
                 raise ValidationError('Прием детей в детский сад осуществляется только в возрасте от 2 до 7 лет')
         if group and group.is_full() and not self.instance.pk:
-            raise ValidationError(f'Группа "{group.group_name}" уже заполнена (максимум {group.max_capacity} учеников)')
+            raise ValidationError(f'Группа "{group.group_name}" уже заполнена (максимум 30 учеников)')
         return cleaned_data
 class TeacherForm(forms.ModelForm):
     class Meta:
@@ -41,21 +41,13 @@ class TeacherForm(forms.ModelForm):
 class GroupForm(forms.ModelForm):
     class Meta:
         model = Group
-        fields = '__all__'
+        fields = ['group_name', 'group_category', 'group_year', 'teacher']
         widgets = {
             'group_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Солнышко'}),
             'group_category': forms.Select(attrs={'class': 'form-control'}),
             'group_year': forms.NumberInput(attrs={'class': 'form-control', 'min': '2020', 'max': '2030'}),
             'teacher': forms.Select(attrs={'class': 'form-control'}),
-            'room_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '101'}),
-            'max_capacity': forms.NumberInput(attrs={'class': 'form-control', 'min': '1', 'max': '30', 'value': '30'}),
         }
-    def clean(self):
-        cleaned_data = super().clean()
-        max_capacity = cleaned_data.get('max_capacity')
-        if max_capacity and max_capacity > 30:
-            raise ValidationError('Группа не может содержать более 30 учеников')
-        return cleaned_data
 class ParentForm(forms.ModelForm):
     class Meta:
         model = Parent

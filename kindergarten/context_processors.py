@@ -26,7 +26,7 @@ def navigation(request):
                 {
                     'name': 'Мои дети',
                     'items': [
-                        {'name': 'Список моих детей', 'url': 'student_list'},
+                        {'name': 'Мои дети', 'url': 'student_list'},
                     ]
                 },
                 {

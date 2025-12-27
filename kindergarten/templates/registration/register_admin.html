@@ -237,6 +237,20 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
+    // Клик по всей карточке для выбора роли
+    roleCards.forEach(card => {
+        card.addEventListener('click', function(e) {
+            // Получаем роль из атрибута data-role
+            const role = this.getAttribute('data-role');
+            // Находим соответствующий radio input
+            const radioInput = document.getElementById(`role_${role}`);
+            if (radioInput) {
+                radioInput.checked = true;
+                radioInput.dispatchEvent(new Event('change'));
+            }
+        });
+    });
+    
     // Инициализация подсветки (выбираем родителя по умолчанию)
     document.getElementById('role_parent').checked = true;
     document.getElementById('role_parent').dispatchEvent(new Event('change'));
